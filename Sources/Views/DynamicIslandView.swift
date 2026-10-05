@@ -108,8 +108,18 @@ public struct DynamicIslandView: View {
                     }
             )
         }
-        .opacity((settings.stealthMode && !controller.isExpanded && !controller.isHovered) ? 0.0 : 1.0)
+        .scaleEffect(
+            x: settings.isNotchDisabled ? 0.001 : 1.0,
+            y: 1.0,
+            anchor: .center
+        )
+        .opacity(
+            settings.isNotchDisabled
+                ? 0.0
+                : ((settings.stealthMode && !controller.isExpanded && !controller.isHovered) ? 0.0 : 1.0)
+        )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .animation(.spring(response: 0.45, dampingFraction: 0.82), value: settings.isNotchDisabled)
         .animation(.easeInOut(duration: 0.2), value: binanceService.flashDirection)
         .animation(.easeInOut(duration: 0.25), value: settings.stealthMode)
         .animation(.easeInOut(duration: 0.25), value: controller.isHovered)
