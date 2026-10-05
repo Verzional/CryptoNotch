@@ -65,6 +65,13 @@ public final class StatusBarController: NSObject {
             }
             .store(in: &cancellables)
 
+        settings.$isNotchDisabled
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.rebuildMenu()
+            }
+            .store(in: &cancellables)
+
         settings.$favorites
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -167,34 +174,55 @@ public final class StatusBarController: NSObject {
 
         menu.addItem(NSMenuItem.separator())
 
-        // 2. Toggle Island
+        // 2. Toggle Notch (⌥⇧C)
         let toggleItem = NSMenuItem(
-            title: islandController.isExpanded ? "Collapse Island" : "Expand Island",
+            title: islandController.isExpanded ? "Collapse Notch" : "Expand Notch",
             action: #selector(toggleIsland),
             keyEquivalent: "c"
         )
         toggleItem.keyEquivalentModifierMask = [.option, .shift]
         toggleItem.target = self
+        if settings.isNotchDisabled {
+            toggleItem.isEnabled = false
+        }
         menu.addItem(toggleItem)
 
-        // 3. Pin Option
+        // 3. Disable / Enable Notch Option (⌥⇧D)
+        let disableItem = NSMenuItem(
+            title: settings.isNotchDisabled ? "Enable Notch" : "Disable Notch",
+            action: #selector(toggleDisableNotch),
+            keyEquivalent: "d"
+        )
+        disableItem.keyEquivalentModifierMask = [.option, .shift]
+        disableItem.target = self
+        menu.addItem(disableItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        // 4. Pin Option
         let pinItem = NSMenuItem(
-            title: "Pin Island Open",
+            title: "Pin Notch Open",
             action: #selector(togglePin),
             keyEquivalent: ""
         )
         pinItem.target = self
         pinItem.state = settings.isPinned ? .on : .off
+        if settings.isNotchDisabled {
+            pinItem.isEnabled = false
+        }
         menu.addItem(pinItem)
 
-        // 4. Stealth Mode Option
+        // 5. Show Only on Hover Option (renamed from Stealth Mode)
         let stealthItem = NSMenuItem(
-            title: "Stealth Mode (Show Only on Hover)",
+            title: "Show Only on Hover",
             action: #selector(toggleStealth),
             keyEquivalent: ""
         )
         stealthItem.target = self
         stealthItem.state = settings.stealthMode ? .on : .off
+        if settings.isNotchDisabled {
+            stealthItem.isEnabled = false
+        }
         menu.addItem(stealthItem)
 
         // 5. Launch at Login
@@ -257,6 +285,11 @@ public final class StatusBarController: NSObject {
         if settings.isPinned && !islandController.isExpanded {
             islandController.toggleExpansion()
         }
+        rebuildMenu()
+    }
+
+    @objc private func toggleDisableNotch() {
+        islandController.toggleDisableNotch()
         rebuildMenu()
     }
 

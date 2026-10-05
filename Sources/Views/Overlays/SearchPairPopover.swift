@@ -139,7 +139,7 @@ public struct SearchPairPopover: View {
                                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                                 .foregroundColor(.white.opacity(0.9))
 
-                            Text("Click ★ on the island to pin coins here")
+                            Text("Click ★ on the notch to pin coins here")
                                 .font(.system(size: 9.5))
                                 .foregroundColor(.white.opacity(0.45))
                                 .multilineTextAlignment(.center)
