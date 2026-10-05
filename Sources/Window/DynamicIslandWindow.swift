@@ -136,6 +136,7 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
     var isHoveredProvider: () -> Bool = { false }
     var isCustomInputShowingProvider: () -> Bool = { false }
     var isCustomizingGridProvider: () -> Bool = { false }
+    var isNotchDisabledProvider: () -> Bool = { false }
     var onHoverChanged: ((Bool) -> Void)?
     var onSwipeGesture: ((CycleDirection) -> Void)?
     var onJumpToFavorite: ((Int) -> Void)?
@@ -185,6 +186,9 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
+        if isNotchDisabledProvider() {
+            return nil
+        }
         let localPoint = convert(point, from: superview)
         if !activeRect().contains(localPoint) {
             return nil
@@ -300,6 +304,10 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
     }
 
     private func checkHover(with event: NSEvent) {
+        if isNotchDisabledProvider() {
+            setHovered(false)
+            return
+        }
         let localPoint = convert(event.locationInWindow, from: nil)
         let inside = activeRect().contains(localPoint)
         setHovered(inside)
@@ -358,6 +366,10 @@ public final class DynamicIslandController: NSObject, ObservableObject {
             }
         }
 
+        if settings.isNotchDisabled {
+            self.panel.ignoresMouseEvents = true
+        }
+
         settings.$isPinned
             .dropFirst()
             .receive(on: RunLoop.main)
@@ -371,6 +383,26 @@ public final class DynamicIslandController: NSObject, ObservableObject {
                     withAnimation(Self.collapseAnimation) {
                         self.isExpanded = false
                     }
+                }
+            }
+            .store(in: &cancellables)
+
+        settings.$isNotchDisabled
+            .dropFirst()
+            .sink { [weak self] disabled in
+                guard let self = self else { return }
+                if disabled {
+                    if self.isExpanded {
+                        withAnimation(Self.collapseAnimation) {
+                            self.isExpanded = false
+                        }
+                    }
+                    self.isCustomInputShowing = false
+                    self.isCustomizingGrid = false
+                    self.isHovered = false
+                    self.panel.ignoresMouseEvents = true
+                } else {
+                    self.panel.ignoresMouseEvents = false
                 }
             }
             .store(in: &cancellables)
@@ -406,6 +438,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
         host.isHoveredProvider = { [weak self] in self?.isHovered ?? false }
         host.isCustomInputShowingProvider = { [weak self] in self?.isCustomInputShowing ?? false }
         host.isCustomizingGridProvider = { [weak self] in self?.isCustomizingGrid ?? false }
+        host.isNotchDisabledProvider = { [weak self] in self?.settings.isNotchDisabled ?? false }
         host.onHoverChanged = { [weak self] hovered in
             self?.handleHover(hovered)
         }
@@ -486,6 +519,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
     }
 
     public func handleHover(_ hovering: Bool) {
+        guard !settings.isNotchDisabled else { return }
         isHovered = hovering
         if hovering {
             collapseWorkItem?.cancel()
@@ -526,6 +560,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
     }
 
     public func toggleExpansion() {
+        guard !settings.isNotchDisabled else { return }
         let anim = !isExpanded ? Self.expandAnimation : Self.collapseAnimation
         withAnimation(anim) {
             isExpanded.toggle()
@@ -535,6 +570,12 @@ public final class DynamicIslandController: NSObject, ObservableObject {
             if let host = hostingView {
                 panel.makeFirstResponder(host)
             }
+        }
+    }
+
+    public func toggleDisableNotch() {
+        withAnimation(.spring(response: 0.44, dampingFraction: 0.84)) {
+            settings.isNotchDisabled.toggle()
         }
     }
 

@@ -8,6 +8,10 @@ public final class SettingsModel: ObservableObject {
         didSet { UserDefaults.standard.set(isPinned, forKey: "CryptoNotch_IsPinned") }
     }
 
+    @Published public var isNotchDisabled: Bool {
+        didSet { UserDefaults.standard.set(isNotchDisabled, forKey: "CryptoNotch_IsNotchDisabled") }
+    }
+
     @Published public var stealthMode: Bool {
         didSet { UserDefaults.standard.set(stealthMode, forKey: "CryptoNotch_StealthMode") }
     }
@@ -37,6 +41,9 @@ public final class SettingsModel: ObservableObject {
             ?? UserDefaults.standard.object(forKey: "CryptoAtoll_IsPinned") as? Bool
             ?? UserDefaults.standard.bool(forKey: "CryptoIsland_IsPinned")
         self.isPinned = pinned
+
+        let notchDisabled = UserDefaults.standard.bool(forKey: "CryptoNotch_IsNotchDisabled")
+        self.isNotchDisabled = notchDisabled
 
         let stealth = UserDefaults.standard.object(forKey: "CryptoNotch_StealthMode") as? Bool
             ?? UserDefaults.standard.object(forKey: "CryptoAtoll_StealthMode") as? Bool

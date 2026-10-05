@@ -371,4 +371,29 @@ final class CryptoModelTests: XCTestCase {
         controller.jumpToFavorite(index: 99)
         XCTAssertEqual(binanceService.currentSymbol.symbol, "ETHUSDT")
     }
+
+    @MainActor
+    func testNotchDisabledToggleAndControllerBehavior() {
+        let settings = SettingsModel()
+        settings.isNotchDisabled = false
+        let binanceService = BinanceService(initialSymbol: CryptoSymbol.presets[0])
+        let controller = DynamicIslandController(binanceService: binanceService, settings: settings)
+
+        XCTAssertFalse(settings.isNotchDisabled)
+        XCTAssertFalse(controller.panel.ignoresMouseEvents)
+
+        // Toggle disable via controller
+        controller.toggleDisableNotch()
+        XCTAssertTrue(settings.isNotchDisabled)
+        XCTAssertTrue(controller.panel.ignoresMouseEvents)
+
+        // When disabled, toggleExpansion() should be guarded
+        controller.toggleExpansion()
+        XCTAssertFalse(controller.isExpanded)
+
+        // Re-enable
+        controller.toggleDisableNotch()
+        XCTAssertFalse(settings.isNotchDisabled)
+        XCTAssertFalse(controller.panel.ignoresMouseEvents)
+    }
 }
