@@ -433,4 +433,122 @@ final class CryptoModelTests: XCTestCase {
         settings.targetDisplay = "automatic"
         XCTAssertEqual(controller.resolveTargetScreen(), autoScreen)
     }
+
+    func testPriceAlertModelAndFormatting() {
+        let alertHigh = PriceAlert(
+            symbol: "BTCUSDT",
+            exchange: .binance,
+            targetPrice: 65000.50,
+            direction: .above
+        )
+        XCTAssertEqual(alertHigh.symbol, "BTCUSDT")
+        XCTAssertEqual(alertHigh.direction, .above)
+        XCTAssertEqual(alertHigh.direction.symbol, "▲")
+        XCTAssertEqual(alertHigh.direction.title, "Above")
+        XCTAssertEqual(alertHigh.formattedTargetPrice, "$65,000.50")
+        XCTAssertFalse(alertHigh.isTriggered)
+        XCTAssertNil(alertHigh.triggeredAt)
+
+        let alertLow = PriceAlert(
+            symbol: "DOGEUSDT",
+            exchange: .binance,
+            targetPrice: 0.1234,
+            direction: .below
+        )
+        XCTAssertEqual(alertLow.direction, .below)
+        XCTAssertEqual(alertLow.direction.symbol, "▼")
+        XCTAssertEqual(alertLow.direction.title, "Below")
+        XCTAssertEqual(alertLow.formattedTargetPrice, "$0.1234")
+
+        let alertMicro = PriceAlert(
+            symbol: "PEPEUSDT",
+            exchange: .binance,
+            targetPrice: 0.0000085,
+            direction: .above
+        )
+        XCTAssertEqual(alertMicro.formattedTargetPrice, "$0.0000085")
+    }
+
+    @MainActor
+    func testAlertManagerAddEvaluateAndDisarm() {
+        let manager = AlertManager.shared
+        // Clear any leftover alerts
+        for alert in manager.alerts {
+            manager.removeAlert(id: alert.id)
+        }
+        XCTAssertEqual(manager.alerts.count, 0)
+
+        // Add 'above' alert for BTC at 70,000
+        let btcAlert = manager.addAlert(
+            symbol: "BTC",
+            exchange: .binance,
+            targetPrice: 70000,
+            direction: .above
+        )
+        XCTAssertEqual(btcAlert.symbol, "BTCUSDT")
+        XCTAssertTrue(manager.hasActiveAlert(for: "BTC"))
+        XCTAssertTrue(manager.hasActiveAlert(for: "BTCUSDT"))
+        XCTAssertFalse(manager.hasActiveAlert(for: "ETH"))
+
+        // Add 'below' alert for ETH at 3,000
+        _ = manager.addAlert(
+            symbol: "ETH",
+            exchange: .binance,
+            targetPrice: 3000,
+            direction: .below
+        )
+        XCTAssertTrue(manager.hasActiveAlert(for: "ETH"))
+
+        // Price below threshold: BTC at 69,500 should NOT trigger
+        manager.evaluatePrice(symbol: "BTCUSDT", exchange: .binance, price: 69500)
+        XCTAssertTrue(manager.hasActiveAlert(for: "BTCUSDT"))
+        XCTAssertEqual(manager.activeAlerts(for: "BTCUSDT").count, 1)
+
+        // Price hits threshold: BTC at 70,050 triggers
+        manager.evaluatePrice(symbol: "BTCUSDT", exchange: .binance, price: 70050)
+        XCTAssertFalse(manager.hasActiveAlert(for: "BTCUSDT"))
+        let allBtc = manager.allAlerts(for: "BTCUSDT")
+        XCTAssertEqual(allBtc.count, 1)
+        XCTAssertTrue(allBtc[0].isTriggered)
+        XCTAssertNotNil(allBtc[0].triggeredAt)
+
+        // Price moves even higher: should NOT re-trigger or duplicate
+        manager.evaluatePrice(symbol: "BTCUSDT", exchange: .binance, price: 75000)
+        XCTAssertEqual(manager.allAlerts(for: "BTCUSDT").count, 1)
+        XCTAssertTrue(manager.allAlerts(for: "BTCUSDT")[0].isTriggered)
+
+        // ETH at 3,050: should NOT trigger 'below' alert
+        manager.evaluatePrice(symbol: "ETHUSDT", exchange: .binance, price: 3050)
+        XCTAssertTrue(manager.hasActiveAlert(for: "ETH"))
+
+        // ETH drops to 2,990: triggers
+        manager.evaluatePrice(symbol: "ETHUSDT", exchange: .binance, price: 2990)
+        XCTAssertFalse(manager.hasActiveAlert(for: "ETH"))
+        XCTAssertEqual(manager.activeAlerts(for: "ETHUSDT").count, 0)
+
+        // Clear triggered alerts
+        manager.clearTriggeredAlerts()
+        XCTAssertEqual(manager.alerts.count, 0)
+    }
+
+    @MainActor
+    func testAlertManagerRemovalAndQueries() {
+        let manager = AlertManager.shared
+        for alert in manager.alerts {
+            manager.removeAlert(id: alert.id)
+        }
+
+        let alert1 = manager.addAlert(symbol: "SOL", exchange: .binance, targetPrice: 150, direction: .above)
+        let alert2 = manager.addAlert(symbol: "SOL", exchange: .binance, targetPrice: 120, direction: .below)
+        XCTAssertEqual(manager.activeAlerts(for: "SOL").count, 2)
+
+        // Remove single alert
+        manager.removeAlert(id: alert1.id)
+        XCTAssertEqual(manager.activeAlerts(for: "SOL").count, 1)
+        XCTAssertEqual(manager.activeAlerts(for: "SOL")[0].id, alert2.id)
+
+        // Clean up
+        manager.removeAlert(id: alert2.id)
+        XCTAssertEqual(manager.alerts.count, 0)
+    }
 }
