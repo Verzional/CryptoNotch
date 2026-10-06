@@ -10,6 +10,7 @@ public final class StatusBarController: NSObject {
     private let islandController: DynamicIslandController
     private let binanceService: BinanceService
     private let settings: SettingsModel
+    private let alertManager: AlertManager
     private let updaterController: SPUStandardUpdaterController
     private var cancellables = Set<AnyCancellable>()
 
@@ -17,11 +18,13 @@ public final class StatusBarController: NSObject {
         islandController: DynamicIslandController,
         binanceService: BinanceService,
         settings: SettingsModel,
+        alertManager: AlertManager? = nil,
         updaterController: SPUStandardUpdaterController? = nil
     ) {
         self.islandController = islandController
         self.binanceService = binanceService
         self.settings = settings
+        self.alertManager = alertManager ?? .shared
         self.updaterController = updaterController ?? SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
         super.init()
 
@@ -97,6 +100,13 @@ public final class StatusBarController: NSObject {
             .store(in: &cancellables)
 
         islandController.$isExpanded
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.rebuildMenu()
+            }
+            .store(in: &cancellables)
+
+        alertManager.$alerts
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.rebuildMenu()
@@ -230,6 +240,61 @@ public final class StatusBarController: NSObject {
             displayMenuItem.isEnabled = false
         }
         menu.addItem(displayMenuItem)
+
+        // Price Alerts Submenu
+        let alertsMenu = NSMenu()
+        let activeAlerts = alertManager.alerts.filter { !$0.isTriggered }
+        let triggeredAlerts = alertManager.alerts.filter { $0.isTriggered }
+
+        let setAlertItem = NSMenuItem(
+            title: "Set Alert for \(binanceService.currentSymbol.baseAsset)...",
+            action: #selector(openAlertPopoverAction),
+            keyEquivalent: ""
+        )
+        setAlertItem.target = self
+        if settings.isNotchDisabled {
+            setAlertItem.isEnabled = false
+        }
+        alertsMenu.addItem(setAlertItem)
+
+        if !alertManager.alerts.isEmpty {
+            alertsMenu.addItem(NSMenuItem.separator())
+
+            if !activeAlerts.isEmpty {
+                let activeHeader = NSMenuItem(title: "Active Alerts (\(activeAlerts.count))", action: nil, keyEquivalent: "")
+                activeHeader.isEnabled = false
+                alertsMenu.addItem(activeHeader)
+
+                for alert in activeAlerts {
+                    let item = NSMenuItem(
+                        title: "\(alert.symbol): \(alert.direction.symbol) \(alert.formattedTargetPrice)",
+                        action: #selector(deleteAlertAction(_:)),
+                        keyEquivalent: ""
+                    )
+                    item.target = self
+                    item.representedObject = alert.id
+                    item.toolTip = "Click to remove alert"
+                    alertsMenu.addItem(item)
+                }
+            }
+
+            if !triggeredAlerts.isEmpty {
+                if !activeAlerts.isEmpty {
+                    alertsMenu.addItem(NSMenuItem.separator())
+                }
+                let clearTriggeredItem = NSMenuItem(
+                    title: "Clear Triggered Alerts (\(triggeredAlerts.count))",
+                    action: #selector(clearTriggeredAlertsAction),
+                    keyEquivalent: ""
+                )
+                clearTriggeredItem.target = self
+                alertsMenu.addItem(clearTriggeredItem)
+            }
+        }
+
+        let alertsMenuItem = NSMenuItem(title: "Price Alerts", action: nil, keyEquivalent: "")
+        alertsMenuItem.submenu = alertsMenu
+        menu.addItem(alertsMenuItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -377,6 +442,24 @@ public final class StatusBarController: NSObject {
             }
         }
         rebuildMenu()
+    }
+
+    @objc private func openAlertPopoverAction() {
+        if !islandController.isExpanded {
+            islandController.toggleExpansion()
+        }
+        islandController.isCustomizingGrid = false
+        islandController.isCustomInputShowing = false
+        islandController.isAlertShowing = true
+    }
+
+    @objc private func deleteAlertAction(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? UUID else { return }
+        alertManager.removeAlert(id: id)
+    }
+
+    @objc private func clearTriggeredAlertsAction() {
+        alertManager.clearTriggeredAlerts()
     }
 
     @objc private func quitApp() {

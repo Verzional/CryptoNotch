@@ -147,6 +147,7 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
     var isHoveredProvider: () -> Bool = { false }
     var isCustomInputShowingProvider: () -> Bool = { false }
     var isCustomizingGridProvider: () -> Bool = { false }
+    var isAlertShowingProvider: () -> Bool = { false }
     var isNotchDisabledProvider: () -> Bool = { false }
     var geometryProvider: () -> NotchGeometry = { NotchGeometry.current() }
     var onHoverChanged: ((Bool) -> Void)?
@@ -336,6 +337,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
     @Published public var isHovered: Bool = false
     @Published public var isCustomInputShowing: Bool = false
     @Published public var isCustomizingGrid: Bool = false
+    @Published public var isAlertShowing: Bool = false
     @Published public var cycleDirection: CycleDirection = .next
     @Published public var cyclePulse: Bool = false
     public var isCollapsing: Bool = false
@@ -423,12 +425,12 @@ public final class DynamicIslandController: NSObject, ObservableObject {
             }
             .store(in: &cancellables)
 
-        Publishers.CombineLatest($isCustomInputShowing, $isCustomizingGrid)
+        Publishers.CombineLatest3($isCustomInputShowing, $isCustomizingGrid, $isAlertShowing)
             .dropFirst()
             .receive(on: RunLoop.main)
-            .sink { [weak self] isCustomShowing, isCustomizing in
+            .sink { [weak self] isCustomShowing, isCustomizing, isAlertShowing in
                 guard let self = self else { return }
-                if !isCustomShowing && !isCustomizing && !self.isHovered && !self.settings.isPinned && self.isExpanded {
+                if !isCustomShowing && !isCustomizing && !isAlertShowing && !self.isHovered && !self.settings.isPinned && self.isExpanded {
                     self.handleHover(false)
                 }
             }
@@ -454,6 +456,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
         host.isHoveredProvider = { [weak self] in self?.isHovered ?? false }
         host.isCustomInputShowingProvider = { [weak self] in self?.isCustomInputShowing ?? false }
         host.isCustomizingGridProvider = { [weak self] in self?.isCustomizingGrid ?? false }
+        host.isAlertShowingProvider = { [weak self] in self?.isAlertShowing ?? false }
         host.isNotchDisabledProvider = { [weak self] in self?.settings.isNotchDisabled ?? false }
         host.geometryProvider = { [weak self] in self?.currentGeometry ?? NotchGeometry.current() }
         host.onHoverChanged = { [weak self] hovered in
@@ -467,7 +470,9 @@ public final class DynamicIslandController: NSObject, ObservableObject {
         }
         host.onEscape = { [weak self] in
             guard let self = self else { return }
-            if self.isCustomizingGrid {
+            if self.isAlertShowing {
+                self.isAlertShowing = false
+            } else if self.isCustomizingGrid {
                 self.isCustomizingGrid = false
             } else if self.isExpanded && !self.settings.isPinned {
                 withAnimation(Self.collapseAnimation) {
@@ -553,12 +558,12 @@ public final class DynamicIslandController: NSObject, ObservableObject {
                 }
             }
         } else {
-            guard isExpanded, !settings.isPinned, !isCustomInputShowing, !isCustomizingGrid else { return }
+            guard isExpanded, !settings.isPinned, !isCustomInputShowing, !isCustomizingGrid, !isAlertShowing else { return }
 
             collapseWorkItem?.cancel()
             let work = DispatchWorkItem { [weak self] in
                 guard let self = self else { return }
-                guard !self.isHovered, !self.settings.isPinned, !self.isCustomInputShowing, !self.isCustomizingGrid, self.isExpanded else { return }
+                guard !self.isHovered, !self.settings.isPinned, !self.isCustomInputShowing, !self.isCustomizingGrid, !self.isAlertShowing, self.isExpanded else { return }
                 self.isCollapsing = true
                 withAnimation(Self.collapseAnimation) {
                     self.isExpanded = false
