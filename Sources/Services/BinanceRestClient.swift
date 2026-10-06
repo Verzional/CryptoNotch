@@ -343,4 +343,34 @@ public final class BinanceRestClient {
 
         return (c1h, c4h)
     }
+
+    /// Fetches the latest spot price for a symbol on the specified exchange for alert evaluation.
+    public func fetchCurrentPrice(symbol: String, exchange: CryptoExchange) async -> Double? {
+        do {
+            switch exchange {
+            case .binance:
+                let json = try await fetch24hTicker(symbol: symbol)
+                if let priceStr = json["lastPrice"] as? String, let p = Double(priceStr) {
+                    return p
+                }
+            case .coinbase:
+                let (ticker, _) = try await fetchCoinbaseTicker(symbol: symbol)
+                if let priceStr = ticker["price"] as? String, let p = Double(priceStr) {
+                    return p
+                }
+            case .kraken:
+                let json = try await fetchKrakenTicker(symbol: symbol)
+                if let result = json["result"] as? [String: Any],
+                   let pairData = result.values.first as? [String: Any],
+                   let c = pairData["c"] as? [Any],
+                   let priceStr = c.first as? String,
+                   let p = Double(priceStr) {
+                    return p
+                }
+            }
+        } catch {
+            return nil
+        }
+        return nil
+    }
 }

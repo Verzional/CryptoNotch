@@ -21,7 +21,13 @@ public final class BinanceService: ObservableObject {
         }
     }
     
-    @Published public private(set) var ticker: TickerData?
+    @Published public private(set) var ticker: TickerData? {
+        didSet {
+            if let t = ticker {
+                AlertManager.shared.evaluatePrice(symbol: t.symbol, exchange: selectedExchange, price: t.price)
+            }
+        }
+    }
     @Published public private(set) var isConnected: Bool = false
     @Published public private(set) var errorMessage: String?
     @Published public private(set) var flashDirection: PriceDirection?
