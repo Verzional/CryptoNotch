@@ -574,7 +574,7 @@ public enum StatMetric: String, CaseIterable, Identifiable, Codable {
 }
 
 // MARK: - Price Formatter Cache
-private final class PriceFormatterCache: @unchecked Sendable {
+final class PriceFormatterCache: @unchecked Sendable {
     static let shared = PriceFormatterCache()
     private let lock = NSLock()
 
