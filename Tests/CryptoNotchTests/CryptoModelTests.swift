@@ -396,4 +396,41 @@ final class CryptoModelTests: XCTestCase {
         XCTAssertFalse(settings.isNotchDisabled)
         XCTAssertFalse(controller.panel.ignoresMouseEvents)
     }
+
+    @MainActor
+    func testTargetDisplaySettingsAndResolution() {
+        let settings = SettingsModel()
+        settings.targetDisplay = "automatic"
+        XCTAssertEqual(settings.targetDisplay, "automatic")
+
+        let binanceService = BinanceService(initialSymbol: CryptoSymbol.presets[0])
+        let controller = DynamicIslandController(binanceService: binanceService, settings: settings)
+
+        // Automatic resolution returns a valid connected screen
+        let autoScreen = controller.resolveTargetScreen()
+        XCTAssertFalse(NSScreen.screens.isEmpty)
+        XCTAssertTrue(NSScreen.screens.contains(autoScreen))
+
+        // If multiple screens exist, verify selecting a specific screen by UUID or localizedName
+        if let firstScreen = NSScreen.screens.first {
+            if let uuid = firstScreen.displayUUIDString {
+                settings.targetDisplay = uuid
+                let resolved = controller.resolveTargetScreen()
+                XCTAssertEqual(resolved.displayUUIDString, uuid)
+            } else {
+                settings.targetDisplay = firstScreen.localizedName
+                let resolved = controller.resolveTargetScreen()
+                XCTAssertEqual(resolved.localizedName, firstScreen.localizedName)
+            }
+        }
+
+        // Graceful fallback for non-existent display ID
+        settings.targetDisplay = "NonExistentDisplay_9999"
+        let fallbackScreen = controller.resolveTargetScreen()
+        XCTAssertTrue(NSScreen.screens.contains(fallbackScreen))
+
+        // Reset to automatic
+        settings.targetDisplay = "automatic"
+        XCTAssertEqual(controller.resolveTargetScreen(), autoScreen)
+    }
 }

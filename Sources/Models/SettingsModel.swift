@@ -12,6 +12,10 @@ public final class SettingsModel: ObservableObject {
         didSet { UserDefaults.standard.set(isNotchDisabled, forKey: "CryptoNotch_IsNotchDisabled") }
     }
 
+    @Published public var targetDisplay: String {
+        didSet { UserDefaults.standard.set(targetDisplay, forKey: "CryptoNotch_TargetDisplay") }
+    }
+
     @Published public var stealthMode: Bool {
         didSet { UserDefaults.standard.set(stealthMode, forKey: "CryptoNotch_StealthMode") }
     }
@@ -44,6 +48,9 @@ public final class SettingsModel: ObservableObject {
 
         let notchDisabled = UserDefaults.standard.bool(forKey: "CryptoNotch_IsNotchDisabled")
         self.isNotchDisabled = notchDisabled
+
+        let display = UserDefaults.standard.string(forKey: "CryptoNotch_TargetDisplay") ?? "automatic"
+        self.targetDisplay = display
 
         let stealth = UserDefaults.standard.object(forKey: "CryptoNotch_StealthMode") as? Bool
             ?? UserDefaults.standard.object(forKey: "CryptoAtoll_StealthMode") as? Bool

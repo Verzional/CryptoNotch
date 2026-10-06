@@ -45,6 +45,17 @@ public final class DynamicIslandPanel: NSPanel {
     }
 }
 
+extension NSScreen {
+    public var displayID: CGDirectDisplayID? {
+        return deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
+    }
+
+    public var displayUUIDString: String? {
+        guard let id = displayID, let uuid = CGDisplayCreateUUIDFromDisplayID(id) else { return nil }
+        return CFUUIDCreateString(nil, uuid.takeRetainedValue()) as String
+    }
+}
+
 /// Represents geometry for the display notch and Dynamic Island dimensions.
 public struct NotchGeometry: Equatable {
     public let hasNotch: Bool
@@ -137,6 +148,7 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
     var isCustomInputShowingProvider: () -> Bool = { false }
     var isCustomizingGridProvider: () -> Bool = { false }
     var isNotchDisabledProvider: () -> Bool = { false }
+    var geometryProvider: () -> NotchGeometry = { NotchGeometry.current() }
     var onHoverChanged: ((Bool) -> Void)?
     var onSwipeGesture: ((CycleDirection) -> Void)?
     var onJumpToFavorite: ((Int) -> Void)?
@@ -165,17 +177,7 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
     }
 
     func activeRect() -> NSRect {
-        guard let window = self.window, let screen = window.screen else {
-            let geometry = NotchGeometry.current()
-            let isExpanded = isExpandedProvider() || isCollapsingProvider()
-            let width = isExpanded ? geometry.expandedWidth : geometry.collapsedWidth
-            let height = isExpanded ? geometry.expandedHeight : geometry.collapsedHeight
-            let minX = (bounds.width - width) / 2
-            let slopX: CGFloat = isExpanded ? 0 : 8
-            let slopY: CGFloat = isExpanded ? 0 : 10
-            return NSRect(x: minX - slopX, y: 0, width: width + (slopX * 2), height: height + slopY)
-        }
-        let geometry = NotchGeometry.current(for: screen)
+        let geometry = geometryProvider()
         let isExpanded = isExpandedProvider() || isCollapsingProvider()
         let width = isExpanded ? geometry.expandedWidth : geometry.collapsedWidth
         let height = isExpanded ? geometry.expandedHeight : geometry.collapsedHeight
@@ -328,6 +330,8 @@ public final class DynamicIslandController: NSObject, ObservableObject {
     public let binanceService: BinanceService
     public let settings: SettingsModel
 
+    @Published public private(set) var targetScreen: NSScreen
+    @Published public private(set) var currentGeometry: NotchGeometry
     @Published public var isExpanded: Bool = false
     @Published public var isHovered: Bool = false
     @Published public var isCustomInputShowing: Bool = false
@@ -350,6 +354,10 @@ public final class DynamicIslandController: NSObject, ObservableObject {
         self.panel = DynamicIslandPanel(contentRect: .zero)
         self.isExpanded = settings.isPinned
 
+        let initialScreen = Self.resolveTargetScreen(for: settings)
+        self.targetScreen = initialScreen
+        self.currentGeometry = NotchGeometry.current(for: initialScreen)
+
         super.init()
 
         setupHostingView()
@@ -365,6 +373,14 @@ public final class DynamicIslandController: NSObject, ObservableObject {
                 self?.updatePanelFrame()
             }
         }
+
+        settings.$targetDisplay
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updatePanelFrame()
+            }
+            .store(in: &cancellables)
 
         if settings.isNotchDisabled {
             self.panel.ignoresMouseEvents = true
@@ -439,6 +455,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
         host.isCustomInputShowingProvider = { [weak self] in self?.isCustomInputShowing ?? false }
         host.isCustomizingGridProvider = { [weak self] in self?.isCustomizingGrid ?? false }
         host.isNotchDisabledProvider = { [weak self] in self?.settings.isNotchDisabled ?? false }
+        host.geometryProvider = { [weak self] in self?.currentGeometry ?? NotchGeometry.current() }
         host.onHoverChanged = { [weak self] hovered in
             self?.handleHover(hovered)
         }
@@ -579,13 +596,44 @@ public final class DynamicIslandController: NSObject, ObservableObject {
         }
     }
 
-    /// Positions the island window centered at the top edge of the screen, hugging the notch.
+    public static func resolveTargetScreen(for settings: SettingsModel) -> NSScreen {
+        let screens = NSScreen.screens
+        guard !screens.isEmpty else {
+            return NSScreen.main ?? NSScreen.screens.first!
+        }
+
+        if settings.targetDisplay != "automatic" {
+            // 1. Match by hardware UUID
+            if let matched = screens.first(where: { $0.displayUUIDString == settings.targetDisplay }) {
+                return matched
+            }
+            // 2. Fallback: match by localized display name
+            if let matched = screens.first(where: { $0.localizedName == settings.targetDisplay }) {
+                return matched
+            }
+        }
+
+        // Automatic mode: prefer screen with physical notch
+        if let notchScreen = screens.first(where: { $0.auxiliaryTopLeftArea != nil }) {
+            return notchScreen
+        }
+
+        // Fallback: main display (or first screen)
+        return NSScreen.main ?? screens[0]
+    }
+
+    public func resolveTargetScreen() -> NSScreen {
+        Self.resolveTargetScreen(for: settings)
+    }
+
+    /// Positions the island window centered at the top edge of the screen, hugging the notch or floating on external displays.
     public func updatePanelFrame(animated: Bool = false) {
-        guard let screen = NSScreen.screens.first(where: { $0.auxiliaryTopLeftArea != nil }) ?? NSScreen.main ?? NSScreen.screens.first else { return }
+        let screen = resolveTargetScreen()
+        let geometry = NotchGeometry.current(for: screen)
+        self.targetScreen = screen
+        self.currentGeometry = geometry
 
         let screenFrame = screen.frame
-        let geometry = NotchGeometry.current(for: screen)
-
         let width = geometry.expandedWidth
         let height = geometry.expandedHeight
 
