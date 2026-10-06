@@ -7,12 +7,14 @@ public struct ExpandedNotchView: View {
     @ObservedObject var controller: DynamicIslandController
     @ObservedObject var binanceService: BinanceService
     @ObservedObject var settings: SettingsModel
+    @ObservedObject var alertManager: AlertManager = .shared
 
     @State private var isFavoritesFullAlertShowing: Bool = false
     @State private var starShake: CGFloat = 0
     @State private var starScale: CGFloat = 1.0
     @State private var isStarHovered: Bool = false
     @State private var dismissToastTask: Task<Void, Never>? = nil
+    @State private var isAlertHovered: Bool = false
     @State private var isPencilHovered: Bool = false
     @State private var isSearchHovered: Bool = false
     @State private var isBackHovered: Bool = false
@@ -184,6 +186,9 @@ public struct ExpandedNotchView: View {
 
                     // Right Ear: Action Tools
                     HStack(spacing: 6) {
+                        if !binanceService.isInvalidSymbol {
+                            alertButton
+                        }
                         customizeGridButton
                         searchButton
                     }
@@ -214,6 +219,9 @@ public struct ExpandedNotchView: View {
                     Spacer()
 
                     HStack(spacing: 6) {
+                        if !binanceService.isInvalidSymbol {
+                            alertButton
+                        }
                         customizeGridButton
                         searchButton
                     }
@@ -295,10 +303,65 @@ public struct ExpandedNotchView: View {
         }
     }
 
+    private var alertButton: some View {
+        let hasAlert = alertManager.hasActiveAlert(for: binanceService.currentSymbol.symbol)
+        return Button {
+            if !controller.isAlertShowing {
+                controller.isCustomizingGrid = false
+                controller.isCustomInputShowing = false
+            }
+            controller.isAlertShowing.toggle()
+        } label: {
+            Image(systemName: hasAlert ? "bell.badge.fill" : "bell.fill")
+                .font(.system(size: 9.5, weight: .bold))
+                .foregroundColor(.white.opacity(isAlertHovered || controller.isAlertShowing ? 1.0 : 0.8))
+                .frame(width: 22, height: 22)
+                .background(
+                    LinearGradient(
+                        colors: controller.isAlertShowing
+                            ? [Color.white.opacity(0.24), Color.white.opacity(0.15)]
+                            : isAlertHovered
+                                ? [Color.white.opacity(0.18), Color.white.opacity(0.10)]
+                                : [Color.white.opacity(0.12), Color.white.opacity(0.06)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .stroke(
+                            controller.isAlertShowing
+                                ? Color.white.opacity(0.35)
+                                : isAlertHovered
+                                    ? Color.white.opacity(0.25)
+                                    : Color.white.opacity(0.15),
+                            lineWidth: 0.8
+                        )
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isAlertHovered = hovering
+            }
+        }
+        .help(hasAlert ? "Manage Price Alerts (Active)" : "Set Price Alert")
+        .popover(isPresented: $controller.isAlertShowing, arrowEdge: .bottom) {
+            PriceAlertPopover(
+                alertManager: alertManager,
+                binanceService: binanceService,
+                isPresented: $controller.isAlertShowing
+            )
+        }
+    }
+
     private var customizeGridButton: some View {
         Button {
             if !controller.isCustomizingGrid {
                 controller.isCustomInputShowing = false
+                controller.isAlertShowing = false
             }
             controller.isCustomizingGrid.toggle()
         } label: {
@@ -347,6 +410,7 @@ public struct ExpandedNotchView: View {
         Button {
             if !controller.isCustomInputShowing {
                 controller.isCustomizingGrid = false
+                controller.isAlertShowing = false
             }
             controller.isCustomInputShowing.toggle()
         } label: {
