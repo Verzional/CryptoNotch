@@ -7,6 +7,27 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         <description>Most recent updates to CryptoNotch</description>
         <language>en</language>
         <item>
+            <title>CryptoNotch 1.6.0</title>
+            <pubDate>Tue, 06 Oct 2026 15:36:05 +0700</pubDate>
+            <sparkle:version>12</sparkle:version>
+            <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<h2>CryptoNotch 1.6.0</h2>
+<ul>
+### What's New in v1.6.0</li>
+</li>
+  <li>**Native Desktop Price Alerts:** Set threshold price alerts (▲ Above / ▼ Below) directly from your MacBook notch.</li>
+  <li>**Top Notch Bell Action:** Frosted glass bell action button with active state badge indicator.</li>
+  <li>**Quick Percentage Chips:** 1-tap calculation pills (-5%, -2%, +2%, +5%) for instant target price setting.</li>
+  <li>**Live Background Evaluation:** High-performance threshold monitoring hooked into real-time WebSocket feeds with native macOS UserNotifications.</li>
+  <li>**Menubar Companion Submenu:** Manage, inspect, and clear active and triggered alerts from the system status bar menu.</li>
+  <li>**Refined Empty States & Polish:** Balanced frosted slot placeholder, zero-layout-shift popover sizing, and keyboard shortcuts.</li>
+</ul>
+            ]]></description>
+            <enclosure url="https://github.com/Verzional/CryptoNotch/releases/download/v1.6.0/CryptoNotch.dmg" sparkle:edSignature="VlSLy82eRHM6ZT1EcxPIYEwEYQZ3PBi8aFn+xOTjt1/X+6NcYSyv0zz1/8dmoFeNNFOEUrmY8oeinjOxIi8WBg==" length="3633787" type="application/octet-stream"></enclosure>
+        </item>
+        <item>
             <title>CryptoNotch 1.5.0</title>
             <pubDate>Tue, 06 Oct 2026 08:55:16 +0700</pubDate>
             <sparkle:version>11</sparkle:version>
@@ -171,6 +192,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: AoJuDKEuoLWsB1ZEpU8+TCKkoMMABrv4iGT5cXs4zU9NFfcfWOLWlsjXGi7MRgnVC/sfARs0ZNRQInzZKACtDA==
-length: 13016
+edSignature: 2L6DmXs9Ee3WJJ/FkOYBqJ364fMSdKW0I08dwBPeWpHXAzFzN/VbNb8OyBNyyi2vXotgqNQ+hN+n3C/kD6bpCA==
+length: 14559
 -->
