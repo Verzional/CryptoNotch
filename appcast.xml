@@ -7,6 +7,23 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         <description>Most recent updates to CryptoNotch</description>
         <language>en</language>
         <item>
+            <title>CryptoNotch 1.5.0</title>
+            <pubDate>Tue, 06 Oct 2026 08:55:16 +0700</pubDate>
+            <sparkle:version>11</sparkle:version>
+            <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<h2>CryptoNotch 1.5.0</h2>
+<ul>
+  <li>Multi-Display Support: Choose where CryptoNotch lives across connected monitors (Studio Display, external 4K/5K screens, or built-in Retina)</li>
+  <li>Smart Clamshell Switching: Automatically routes to your primary external display when your MacBook lid is closed, and snaps back when reopened</li>
+  <li>Seamless U-Shape Notch Geometry: Flat-top U-shape design bleeds directly into the physical top bezel on external monitors without wallpaper gaps</li>
+  <li>Menubar Display Selector: Instantly switch between monitors or Automatic mode from the menu bar with live hot-plug detection</li>
+</ul>
+            ]]></description>
+            <enclosure url="https://github.com/Verzional/CryptoNotch/releases/download/v1.5.0/CryptoNotch.dmg" sparkle:edSignature="s8zBcjiby25i1IR1X3biUKnollWccTUXfS6b7s4VVfH0O8ezd1dQslK3Gqi6/eUQmNslPMtuD7DzERz7ncPHDQ==" length="3361699" type="application/octet-stream"></enclosure>
+        </item>
+        <item>
             <title>CryptoNotch 1.4.0</title>
             <pubDate>Mon, 05 Oct 2026 23:52:10 +0700</pubDate>
             <sparkle:version>10</sparkle:version>
@@ -154,6 +171,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: 93Hp8hcJqc9Ros/XsGTfjs+/xU/j1bxXB2dEABOGVFLk/bRZ0kq8eDMMZFtH/slZjpwbcNwkVJnXKyMcmfoTBQ==
-length: 11689
+edSignature: AoJuDKEuoLWsB1ZEpU8+TCKkoMMABrv4iGT5cXs4zU9NFfcfWOLWlsjXGi7MRgnVC/sfARs0ZNRQInzZKACtDA==
+length: 13016
 -->
