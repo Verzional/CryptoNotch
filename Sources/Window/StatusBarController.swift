@@ -72,6 +72,23 @@ public final class StatusBarController: NSObject {
             }
             .store(in: &cancellables)
 
+        settings.$targetDisplay
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.rebuildMenu()
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.rebuildMenu()
+            }
+        }
+
         settings.$favorites
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -171,6 +188,48 @@ public final class StatusBarController: NSObject {
         let exchangeMenuItem = NSMenuItem(title: "Exchange", action: nil, keyEquivalent: "")
         exchangeMenuItem.submenu = exchangeMenu
         menu.addItem(exchangeMenuItem)
+
+        // Display Submenu
+        let displayMenu = NSMenu()
+        let screens = NSScreen.screens
+
+        let autoItem = NSMenuItem(
+            title: "Automatic (Follow Notch / Clamshell)",
+            action: #selector(selectDisplayAction(_:)),
+            keyEquivalent: ""
+        )
+        autoItem.target = self
+        autoItem.representedObject = "automatic"
+        autoItem.state = (settings.targetDisplay == "automatic") ? .on : .off
+        displayMenu.addItem(autoItem)
+
+        if screens.count > 1 {
+            displayMenu.addItem(NSMenuItem.separator())
+            for screen in screens {
+                let name = screen.localizedName
+                let uuid = screen.displayUUIDString ?? name
+                let hasNotch = screen.auxiliaryTopLeftArea != nil
+                let title = hasNotch ? "\(name) (Notch)" : name
+
+                let item = NSMenuItem(
+                    title: title,
+                    action: #selector(selectDisplayAction(_:)),
+                    keyEquivalent: ""
+                )
+                item.target = self
+                item.representedObject = uuid
+                let isSelected = (settings.targetDisplay == uuid) || (settings.targetDisplay == name)
+                item.state = isSelected ? .on : .off
+                displayMenu.addItem(item)
+            }
+        }
+
+        let displayMenuItem = NSMenuItem(title: "Display", action: nil, keyEquivalent: "")
+        displayMenuItem.submenu = displayMenu
+        if settings.isNotchDisabled {
+            displayMenuItem.isEnabled = false
+        }
+        menu.addItem(displayMenuItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -278,6 +337,13 @@ public final class StatusBarController: NSObject {
             binanceService.selectExchange(exchange)
             settings.adaptSlots(for: exchange)
         }
+    }
+
+    @objc private func selectDisplayAction(_ sender: NSMenuItem) {
+        guard let target = sender.representedObject as? String else { return }
+        settings.targetDisplay = target
+        islandController.updatePanelFrame()
+        rebuildMenu()
     }
 
     @objc private func togglePin() {
