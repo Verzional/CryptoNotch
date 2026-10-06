@@ -7,7 +7,7 @@ public struct DynamicIslandView: View {
     @ObservedObject var settings: SettingsModel
 
     private var geometry: NotchGeometry {
-        NotchGeometry.current()
+        controller.currentGeometry
     }
 
     public init(
@@ -60,31 +60,15 @@ public struct DynamicIslandView: View {
                 alignment: .top
             )
             .background(
-                ZStack {
-                    if geometry.hasNotch {
-                        NotchShape(bottomRadius: controller.isExpanded ? 20 : 10)
-                            .fill(Color.black)
-                    } else {
-                        RoundedRectangle(cornerRadius: controller.isExpanded ? 20 : 17, style: .continuous)
-                            .fill(Color.black)
-                    }
-                }
+                NotchShape(bottomRadius: controller.isExpanded ? 20 : (geometry.hasNotch ? 10 : 12))
+                    .fill(Color.black)
             )
             .overlay(
-                ZStack {
-                    if geometry.hasNotch {
-                        NotchOutline(bottomRadius: controller.isExpanded ? 20 : 10)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    } else {
-                        RoundedRectangle(cornerRadius: controller.isExpanded ? 20 : 17, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    }
-                }
+                NotchOutline(bottomRadius: controller.isExpanded ? 20 : (geometry.hasNotch ? 10 : 12))
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
             )
             .clipShape(
-                geometry.hasNotch
-                    ? AnyShape(NotchShape(bottomRadius: controller.isExpanded ? 20 : 10))
-                    : AnyShape(RoundedRectangle(cornerRadius: controller.isExpanded ? 20 : 17, style: .continuous))
+                NotchShape(bottomRadius: controller.isExpanded ? 20 : (geometry.hasNotch ? 10 : 12))
             )
             .shadow(color: Color.black.opacity(controller.isExpanded ? 0.35 : 0.0), radius: controller.isExpanded ? 12 : 0, x: 0, y: controller.isExpanded ? 6 : 0)
             .contentShape(Rectangle())
