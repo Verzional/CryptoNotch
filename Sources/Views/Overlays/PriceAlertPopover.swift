@@ -39,17 +39,36 @@ public struct PriceAlertPopover: View {
         return entered >= currentPrice ? .above : .below
     }
 
+    private var priceDecimals: Int {
+        binanceService.ticker?.priceDecimals ?? TickerData.standardDecimalPlaces(for: currentPrice)
+    }
+
+    private func roundedPrice(for pct: Double) -> Double {
+        guard currentPrice > 0 else { return 0 }
+        let calculated = currentPrice * (1.0 + pct)
+        let factor = pow(10.0, Double(priceDecimals))
+        return (calculated * factor).rounded() / factor
+    }
+
+    private func formattedCalculatedPrice(for pct: Double) -> String {
+        let rounded = roundedPrice(for: pct)
+        return PriceFormatterCache.shared.format(rounded, decimals: priceDecimals)
+            .replacingOccurrences(of: "$", with: "")
+            .replacingOccurrences(of: ",", with: "")
+    }
+
     private func isPillSelected(_ pct: Double) -> Bool {
         guard currentPrice > 0, let entered = parsedEnteredPrice else { return false }
-        let calculated = currentPrice * (1.0 + pct)
-        let formatted = PriceFormatterCache.shared.format(calculated).replacingOccurrences(of: "$", with: "").replacingOccurrences(of: ",", with: "")
-        let enteredFormatted = PriceFormatterCache.shared.format(entered).replacingOccurrences(of: "$", with: "").replacingOccurrences(of: ",", with: "")
-        return formatted == enteredFormatted
+        let rounded = roundedPrice(for: pct)
+        let factor = pow(10.0, Double(priceDecimals))
+        return abs(entered - rounded) < (1.0 / (factor * 2.0))
     }
 
     private var pricePlaceholder: String {
         if let ticker = binanceService.ticker {
-            return PriceFormatterCache.shared.format(ticker.price).replacingOccurrences(of: "$", with: "")
+            return PriceFormatterCache.shared.format(ticker.price, decimals: priceDecimals)
+                .replacingOccurrences(of: "$", with: "")
+                .replacingOccurrences(of: ",", with: "")
         }
         return "0.00"
     }
@@ -109,8 +128,7 @@ public struct PriceAlertPopover: View {
                                 pct: pct,
                                 isSelected: isPillSelected(pct)
                             ) {
-                                let calculated = currentPrice * (1.0 + pct)
-                                targetPriceText = PriceFormatterCache.shared.format(calculated).replacingOccurrences(of: "$", with: "")
+                                targetPriceText = formattedCalculatedPrice(for: pct)
                                 isFieldFocused = true
                             }
                             if index < pcts.count - 1 {
