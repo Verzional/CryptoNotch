@@ -24,7 +24,7 @@ public struct SearchPairPopover: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 11) {
+        VStack(alignment: .leading, spacing: 10) {
             // Header (clean, no duplicate search icon)
             HStack(alignment: .center) {
                 Text("Switch Pair")
@@ -112,7 +112,7 @@ public struct SearchPairPopover: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("FAVORITES")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .font(.system(size: 8.5, weight: .bold, design: .rounded))
                         .foregroundColor(.gray)
                         .tracking(0.5)
 
@@ -254,6 +254,7 @@ public struct SearchPairPopover: View {
         }
         .padding(12)
         .frame(width: 285)
+        .preferredColorScheme(.dark)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 isSearchFocused = true
