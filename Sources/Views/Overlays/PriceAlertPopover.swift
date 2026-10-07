@@ -88,16 +88,13 @@ public struct PriceAlertPopover: View {
 
                     Spacer()
 
-                    if !alerts.isEmpty {
-                        Text("\(alerts.count)/3")
-                            .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.white.opacity(0.10))
-                            .foregroundColor(.white.opacity(0.75))
-                            .clipShape(Capsule())
-                            .transition(.opacity)
-                    }
+                    Text("\(alerts.count)/3")
+                        .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.white.opacity(0.10))
+                        .foregroundColor(.white.opacity(0.75))
+                        .clipShape(Capsule())
                 }
 
                 // Input Bar (Exact 1:1 match to SearchPairPopover)
