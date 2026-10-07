@@ -243,8 +243,7 @@ public final class StatusBarController: NSObject {
 
         // Price Alerts Submenu
         let alertsMenu = NSMenu()
-        let activeAlerts = alertManager.alerts.filter { !$0.isTriggered }
-        let triggeredAlerts = alertManager.alerts.filter { $0.isTriggered }
+        let activeAlerts = alertManager.alerts
 
         let setAlertItem = NSMenuItem(
             title: "Set Alert for \(binanceService.currentSymbol.baseAsset)...",
@@ -257,38 +256,23 @@ public final class StatusBarController: NSObject {
         }
         alertsMenu.addItem(setAlertItem)
 
-        if !alertManager.alerts.isEmpty {
+        if !activeAlerts.isEmpty {
             alertsMenu.addItem(NSMenuItem.separator())
 
-            if !activeAlerts.isEmpty {
-                let activeHeader = NSMenuItem(title: "Active Alerts (\(activeAlerts.count))", action: nil, keyEquivalent: "")
-                activeHeader.isEnabled = false
-                alertsMenu.addItem(activeHeader)
+            let activeHeader = NSMenuItem(title: "Active Alerts (\(activeAlerts.count))", action: nil, keyEquivalent: "")
+            activeHeader.isEnabled = false
+            alertsMenu.addItem(activeHeader)
 
-                for alert in activeAlerts {
-                    let item = NSMenuItem(
-                        title: "\(alert.symbol): \(alert.direction.symbol) \(alert.formattedTargetPrice)",
-                        action: #selector(deleteAlertAction(_:)),
-                        keyEquivalent: ""
-                    )
-                    item.target = self
-                    item.representedObject = alert.id
-                    item.toolTip = "Click to remove alert"
-                    alertsMenu.addItem(item)
-                }
-            }
-
-            if !triggeredAlerts.isEmpty {
-                if !activeAlerts.isEmpty {
-                    alertsMenu.addItem(NSMenuItem.separator())
-                }
-                let clearTriggeredItem = NSMenuItem(
-                    title: "Clear Triggered Alerts (\(triggeredAlerts.count))",
-                    action: #selector(clearTriggeredAlertsAction),
+            for alert in activeAlerts {
+                let item = NSMenuItem(
+                    title: "\(alert.symbol): \(alert.direction.symbol) \(alert.formattedTargetPrice)",
+                    action: #selector(deleteAlertAction(_:)),
                     keyEquivalent: ""
                 )
-                clearTriggeredItem.target = self
-                alertsMenu.addItem(clearTriggeredItem)
+                item.target = self
+                item.representedObject = alert.id
+                item.toolTip = "Click to remove alert"
+                alertsMenu.addItem(item)
             }
         }
 
@@ -456,10 +440,6 @@ public final class StatusBarController: NSObject {
     @objc private func deleteAlertAction(_ sender: NSMenuItem) {
         guard let id = sender.representedObject as? UUID else { return }
         alertManager.removeAlert(id: id)
-    }
-
-    @objc private func clearTriggeredAlertsAction() {
-        alertManager.clearTriggeredAlerts()
     }
 
     @objc private func quitApp() {

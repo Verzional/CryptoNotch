@@ -48,7 +48,10 @@ public final class AlertManager: NSObject, ObservableObject {
         guard let data = UserDefaults.standard.data(forKey: storageKey) else { return }
         do {
             let decoded = try JSONDecoder().decode([PriceAlert].self, from: data)
-            self.alerts = decoded
+            self.alerts = decoded.filter { !$0.isTriggered }
+            if self.alerts.count != decoded.count {
+                saveAlerts()
+            }
         } catch {
             print("Failed to decode price alerts: \(error)")
         }
@@ -79,7 +82,7 @@ public final class AlertManager: NSObject, ObservableObject {
             targetPrice: targetPrice,
             direction: direction
         )
-        alerts.insert(alert, at: 0)
+        alerts.append(alert)
         saveAlerts()
         return alert
     }
@@ -113,10 +116,9 @@ public final class AlertManager: NSObject, ObservableObject {
 
     public func evaluatePrice(symbol: String, exchange: CryptoExchange, price: Double) {
         let cleanSymbol = CryptoSymbol.from(rawInput: symbol, defaultExchange: exchange).symbol
-        var triggeredAny = false
+        var triggeredIDs: Set<UUID> = []
 
-        for index in alerts.indices {
-            var alert = alerts[index]
+        for alert in alerts {
             guard alert.symbol == cleanSymbol && !alert.isTriggered else { continue }
 
             let shouldTrigger: Bool
@@ -128,15 +130,16 @@ public final class AlertManager: NSObject, ObservableObject {
             }
 
             if shouldTrigger {
-                alert.isTriggered = true
-                alert.triggeredAt = Date()
-                alerts[index] = alert
-                triggeredAny = true
-                fireNotification(for: alert, currentPrice: price)
+                var triggeredAlert = alert
+                triggeredAlert.isTriggered = true
+                triggeredAlert.triggeredAt = Date()
+                triggeredIDs.insert(alert.id)
+                fireNotification(for: triggeredAlert, currentPrice: price)
             }
         }
 
-        if triggeredAny {
+        if !triggeredIDs.isEmpty {
+            alerts.removeAll { triggeredIDs.contains($0.id) }
             saveAlerts()
         }
     }
@@ -146,12 +149,9 @@ public final class AlertManager: NSObject, ObservableObject {
         guard !isRunningInTestEnvironment else { return }
 
         let content = UNMutableNotificationContent()
-        let dirEmoji = alert.direction == .above ? "🚀" : "📉"
-        content.title = "\(dirEmoji) \(alert.symbol) Price Alert"
-
-        let formattedCurrent = PriceFormatterCache.shared.format(currentPrice)
-
-        content.body = "\(alert.symbol) crossed \(alert.direction.title) \(alert.formattedTargetPrice) (Now: \(formattedCurrent))"
+        let baseAsset = CryptoSymbol.from(rawInput: alert.symbol).baseAsset
+        content.title = "\(baseAsset) Price Alert"
+        content.body = "Crossed \(alert.direction == .above ? "above" : "below") \(alert.formattedTargetPrice)"
         content.sound = .default
 
         let request = UNNotificationRequest(

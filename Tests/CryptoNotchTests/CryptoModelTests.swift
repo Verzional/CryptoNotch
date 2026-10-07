@@ -504,30 +504,34 @@ final class CryptoModelTests: XCTestCase {
         XCTAssertTrue(manager.hasActiveAlert(for: "BTCUSDT"))
         XCTAssertEqual(manager.activeAlerts(for: "BTCUSDT").count, 1)
 
-        // Price hits threshold: BTC at 70,050 triggers
+        var notifiedAlert: PriceAlert?
+        var notifiedPrice: Double?
+        manager.onNotificationFired = { alert, price in
+            notifiedAlert = alert
+            notifiedPrice = price
+        }
+
+        // Price hits threshold: BTC at 70,050 triggers and auto-disarms
         manager.evaluatePrice(symbol: "BTCUSDT", exchange: .binance, price: 70050)
         XCTAssertFalse(manager.hasActiveAlert(for: "BTCUSDT"))
-        let allBtc = manager.allAlerts(for: "BTCUSDT")
-        XCTAssertEqual(allBtc.count, 1)
-        XCTAssertTrue(allBtc[0].isTriggered)
-        XCTAssertNotNil(allBtc[0].triggeredAt)
+        XCTAssertEqual(manager.allAlerts(for: "BTCUSDT").count, 0)
+        XCTAssertEqual(notifiedAlert?.symbol, "BTCUSDT")
+        XCTAssertEqual(notifiedPrice, 70050)
 
         // Price moves even higher: should NOT re-trigger or duplicate
+        notifiedAlert = nil
         manager.evaluatePrice(symbol: "BTCUSDT", exchange: .binance, price: 75000)
-        XCTAssertEqual(manager.allAlerts(for: "BTCUSDT").count, 1)
-        XCTAssertTrue(manager.allAlerts(for: "BTCUSDT")[0].isTriggered)
+        XCTAssertNil(notifiedAlert)
+        XCTAssertEqual(manager.allAlerts(for: "BTCUSDT").count, 0)
 
         // ETH at 3,050: should NOT trigger 'below' alert
         manager.evaluatePrice(symbol: "ETHUSDT", exchange: .binance, price: 3050)
         XCTAssertTrue(manager.hasActiveAlert(for: "ETH"))
 
-        // ETH drops to 2,990: triggers
+        // ETH drops to 2,990: triggers and auto-disarms
         manager.evaluatePrice(symbol: "ETHUSDT", exchange: .binance, price: 2990)
         XCTAssertFalse(manager.hasActiveAlert(for: "ETH"))
         XCTAssertEqual(manager.activeAlerts(for: "ETHUSDT").count, 0)
-
-        // Clear triggered alerts
-        manager.clearTriggeredAlerts()
         XCTAssertEqual(manager.alerts.count, 0)
     }
 
