@@ -58,7 +58,7 @@ public struct CustomizationPopover: View {
                 }
             }
 
-            Divider().background(Color.white.opacity(0.12))
+            Divider().background(Color.white.opacity(0.10))
 
             // Metrics picker list filtered to metrics supported on the current exchange
             VStack(alignment: .leading, spacing: 6) {
@@ -146,6 +146,7 @@ public struct CustomizationPopover: View {
         }
         .padding(12)
         .frame(width: 268)
+        .preferredColorScheme(.dark)
         .onAppear {
             settings.adaptSlots(for: exchange)
         }
