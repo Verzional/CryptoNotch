@@ -7,6 +7,20 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         <description>Most recent updates to CryptoNotch</description>
         <language>en</language>
         <item>
+            <title>CryptoNotch 1.6.3</title>
+            <pubDate>Wed, 07 Oct 2026 10:07:22 +0700</pubDate>
+            <sparkle:version>15</sparkle:version>
+            <sparkle:shortVersionString>1.6.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<h2>CryptoNotch 1.6.3</h2>
+<ul>
+  <li>style(ui): persistently display alert capacity capsule pill in header</li>
+</ul>
+            ]]></description>
+            <enclosure url="https://github.com/Verzional/CryptoNotch/releases/download/v1.6.3/CryptoNotch.dmg" sparkle:edSignature="ZRowApcdbSs1cRz0krz9HhvUiU0owpyoYSghI0uxJrRQKbIFrY9C9Jx4VHj9u2hSCVRfMEtYgbpJa/ePqMP+Aw==" length="3635783" type="application/octet-stream"></enclosure>
+        </item>
+        <item>
             <title>CryptoNotch 1.6.2</title>
             <pubDate>Wed, 07 Oct 2026 09:56:36 +0700</pubDate>
             <sparkle:version>14</sparkle:version>
@@ -225,6 +239,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: 1vXjv4Cj4C55W32LuvOkrqLVBV/6hnJfm3uz5iRsR48bPSj8YI62e5y0QdksTa8k4BikZ30x/3Y5ZgTgRvbIDQ==
-length: 16624
+edSignature: fzVJ3UXkyasq4a8qLUjwoORupYTevmpTxteoDLoDDSsVA47tREIjZjsvgknfKT3RifwuN70z35a+bctv0cO2Cg==
+length: 17434
 -->
