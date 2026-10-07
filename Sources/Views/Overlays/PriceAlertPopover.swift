@@ -77,9 +77,9 @@ public struct PriceAlertPopover: View {
         let symbol = binanceService.currentSymbol
         let alerts = alertManager.allAlerts(for: symbol.symbol)
 
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             // Top Controls Section (Protected from vertical compression during window resize)
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 // Header
                 HStack(alignment: .center) {
                     Text("Price Alert")
@@ -90,8 +90,12 @@ public struct PriceAlertPopover: View {
 
                     if !alerts.isEmpty {
                         Text("\(alerts.count)/3")
-                            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                            .foregroundColor(.gray)
+                            .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.white.opacity(0.10))
+                            .foregroundColor(.white.opacity(0.75))
+                            .clipShape(Capsule())
                             .transition(.opacity)
                     }
                 }
@@ -150,9 +154,18 @@ public struct PriceAlertPopover: View {
 
             // Dynamic Alerts Section (Hugs content: 0 alerts = zero extra height)
             if !alerts.isEmpty {
-                VStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: 6) {
                     Divider()
-                        .background(Color.white.opacity(0.08))
+                        .background(Color.white.opacity(0.10))
+
+                    HStack {
+                        Text("ACTIVE ALERTS")
+                            .font(.system(size: 8.5, weight: .bold, design: .rounded))
+                            .foregroundColor(.gray)
+                            .tracking(0.5)
+
+                        Spacer()
+                    }
 
                     VStack(spacing: 3) {
                         ForEach(alerts) { alert in
@@ -166,8 +179,8 @@ public struct PriceAlertPopover: View {
                 }
             }
         }
-        .padding(10)
-        .frame(width: 236)
+        .padding(12)
+        .frame(width: 244)
         .preferredColorScheme(.dark)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
@@ -302,11 +315,15 @@ private struct AlertRowView: View {
             }
             .help("Delete alert")
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 4.5)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
         .background(
-            RoundedRectangle(cornerRadius: 5, style: .continuous)
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(Color.white.opacity(0.06))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
         )
         .opacity(appeared ? 1.0 : 0.0)
         .onAppear {
