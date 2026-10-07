@@ -2,10 +2,11 @@ import SwiftUI
 import AppKit
 
 /// Ultra-minimalist glass popover card for creating and managing price threshold alerts.
+/// Engineered with a stable frame geometry to eliminate OS-level window resize jitter.
 @MainActor
 public struct PriceAlertPopover: View {
     @ObservedObject var alertManager: AlertManager
-    @ObservedObject var binanceService: BinanceService
+    let binanceService: BinanceService
     @Binding var isPresented: Bool
 
     @State private var targetPriceText: String = ""
@@ -57,126 +58,98 @@ public struct PriceAlertPopover: View {
         let symbol = binanceService.currentSymbol
         let alerts = alertManager.allAlerts(for: symbol.symbol)
 
-        VStack(alignment: .leading, spacing: 9) {
-            // Header
-            HStack(alignment: .center) {
-                Text("Price Alert")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-            }
-
-            // Input Bar (Exact 1:1 match to SearchPairPopover)
-            HStack(spacing: 7) {
-                Text("$")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundColor(.gray)
-
-                TextField(pricePlaceholder, text: $targetPriceText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .focused($isFieldFocused)
-                    .onSubmit {
-                        createAlert()
-                    }
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.08))
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(isFieldFocused ? Color.white.opacity(0.3) : Color.white.opacity(0.12), lineWidth: 0.8)
-            )
-
-            // Quick Percentage Chips (1:1 replica of HUD change pill)
-            if currentPrice > 0 {
-                HStack(spacing: 0) {
-                    let pcts = [-0.05, -0.02, 0.02, 0.05]
-                    ForEach(Array(pcts.enumerated()), id: \.element) { index, pct in
-                        QuickPercentagePill(
-                            pct: pct,
-                            isSelected: isPillSelected(pct)
-                        ) {
-                            let calculated = currentPrice * (1.0 + pct)
-                            targetPriceText = PriceFormatterCache.shared.format(calculated).replacingOccurrences(of: "$", with: "")
-                            isFieldFocused = true
-                        }
-                        if index < pcts.count - 1 {
-                            Spacer(minLength: 2)
-                        }
-                    }
-                }
-            }
-
-            if let err = inputError {
-                Text(err)
-                    .font(.system(size: 8.5, weight: .medium, design: .rounded))
-                    .foregroundColor(.red.opacity(0.9))
-            }
-
-            Divider()
-                .background(Color.white.opacity(0.08))
-
-            // Active Alerts (Always present for stable window sizing)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("ACTIVE ALERTS")
-                        .font(.system(size: 8, weight: .bold, design: .rounded))
-                        .foregroundColor(.gray)
-                        .tracking(0.5)
+        VStack(alignment: .leading, spacing: 8) {
+            // Top Controls Section (Protected from vertical compression during window resize)
+            VStack(alignment: .leading, spacing: 8) {
+                // Header
+                HStack(alignment: .center) {
+                    Text("Price Alert")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
 
                     Spacer()
 
-                    if alerts.contains(where: { $0.isTriggered }) {
-                        Button {
-                            alertManager.clearTriggeredAlerts()
-                        } label: {
-                            Text("Clear Triggered")
-                                .font(.system(size: 8, weight: .medium, design: .rounded))
-                                .foregroundColor(.white.opacity(0.5))
-                        }
-                        .buttonStyle(.plain)
+                    if !alerts.isEmpty {
+                        Text("\(alerts.count)/3")
+                            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                            .foregroundColor(.gray)
+                            .transition(.opacity)
                     }
                 }
 
-                if alerts.isEmpty {
-                    HStack(spacing: 5) {
-                        Image(systemName: "bell.slash")
-                            .font(.system(size: 8, weight: .medium))
-                            .foregroundColor(.white.opacity(0.28))
+                // Input Bar (Exact 1:1 match to SearchPairPopover)
+                HStack(spacing: 7) {
+                    Text("$")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundColor(.gray)
 
-                        Text("No alerts set")
-                            .font(.system(size: 9, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.35))
+                    TextField(pricePlaceholder, text: $targetPriceText)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .focused($isFieldFocused)
+                        .onSubmit {
+                            createAlert()
+                        }
+                }
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
+                .background(Color.white.opacity(0.08))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(isFieldFocused ? Color.white.opacity(0.3) : Color.white.opacity(0.12), lineWidth: 0.8)
+                )
 
-                        Spacer()
+                // Quick Percentage Chips (1:1 replica of HUD change pill)
+                if currentPrice > 0 {
+                    HStack(spacing: 0) {
+                        let pcts = [-0.05, -0.02, 0.02, 0.05]
+                        ForEach(Array(pcts.enumerated()), id: \.element) { index, pct in
+                            QuickPercentagePill(
+                                pct: pct,
+                                isSelected: isPillSelected(pct)
+                            ) {
+                                let calculated = currentPrice * (1.0 + pct)
+                                targetPriceText = PriceFormatterCache.shared.format(calculated).replacingOccurrences(of: "$", with: "")
+                                isFieldFocused = true
+                            }
+                            if index < pcts.count - 1 {
+                                Spacer(minLength: 2)
+                            }
+                        }
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .fill(Color.white.opacity(0.03))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 0.8)
-                    )
-                } else {
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(spacing: 3) {
-                            ForEach(alerts) { alert in
-                                AlertRowView(alert: alert) {
+                }
+
+                if let err = inputError {
+                    Text(err)
+                        .font(.system(size: 8.5, weight: .medium, design: .rounded))
+                        .foregroundColor(.red.opacity(0.9))
+                        .transition(.opacity)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .layoutPriority(1)
+
+            // Dynamic Alerts Section (Hugs content: 0 alerts = zero extra height)
+            if !alerts.isEmpty {
+                VStack(spacing: 6) {
+                    Divider()
+                        .background(Color.white.opacity(0.08))
+
+                    VStack(spacing: 3) {
+                        ForEach(alerts) { alert in
+                            AlertRowView(alert: alert) {
+                                withAnimation(.spring(response: 0.22, dampingFraction: 0.8)) {
                                     alertManager.removeAlert(id: alert.id)
                                 }
                             }
                         }
                     }
-                    .frame(maxHeight: 85)
                 }
             }
         }
-        .padding(11)
-        .frame(width: 230)
+        .padding(10)
+        .frame(width: 236)
         .preferredColorScheme(.dark)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
@@ -185,23 +158,34 @@ public struct PriceAlertPopover: View {
         }
     }
 
-
     private func createAlert() {
+        let symbol = binanceService.currentSymbol
+        let alerts = alertManager.allAlerts(for: symbol.symbol)
+        if alerts.count >= 3 {
+            withAnimation(.spring(response: 0.22, dampingFraction: 0.8)) {
+                inputError = "Maximum 3 alerts"
+            }
+            return
+        }
+
         let cleaned = targetPriceText.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespaces)
         guard let target = Double(cleaned), target > 0 else {
-            inputError = "Enter a valid price"
+            withAnimation(.spring(response: 0.22, dampingFraction: 0.8)) {
+                inputError = "Enter a valid price"
+            }
             return
         }
 
         inputError = nil
-        alertManager.addAlert(
-            symbol: binanceService.currentSymbol.symbol,
+        _ = alertManager.addAlert(
+            symbol: symbol.symbol,
             exchange: binanceService.selectedExchange,
             targetPrice: target,
             direction: effectiveDirection
         )
-
         targetPriceText = ""
+
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
     }
 }
 
@@ -270,6 +254,7 @@ private struct AlertRowView: View {
     let onDelete: () -> Void
 
     @State private var isDeleteHovered: Bool = false
+    @State private var appeared: Bool = false
 
     var body: some View {
         HStack(spacing: 5) {
@@ -278,20 +263,10 @@ private struct AlertRowView: View {
                 .foregroundColor(alert.direction == .above ? .green : .red)
 
             Text(alert.formattedTargetPrice)
-                .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
                 .foregroundColor(.white)
 
             Spacer()
-
-            if alert.isTriggered {
-                Text("Fired")
-                    .font(.system(size: 7.5, weight: .bold, design: .rounded))
-                    .foregroundColor(.orange)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 1)
-                    .background(Color.orange.opacity(0.18))
-                    .clipShape(Capsule())
-            }
 
             Button(action: onDelete) {
                 Image(systemName: "xmark")
@@ -310,11 +285,16 @@ private struct AlertRowView: View {
             .help("Delete alert")
         }
         .padding(.horizontal, 6)
-        .padding(.vertical, 3.5)
+        .padding(.vertical, 4.5)
         .background(
             RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(Color.white.opacity(alert.isTriggered ? 0.03 : 0.06))
+                .fill(Color.white.opacity(0.06))
         )
+        .opacity(appeared ? 1.0 : 0.0)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.18)) {
+                appeared = true
+            }
+        }
     }
 }
-
