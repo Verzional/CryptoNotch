@@ -3,6 +3,26 @@ import Foundation
 /// Pure functional parser for Binance REST and WebSocket JSON payloads.
 public enum BinanceDataParser {
 
+    public static func decimalPlaces(from priceString: String?) -> Int? {
+        guard let priceString = priceString, let price = Double(priceString) else {
+            return nil
+        }
+        var trimmed = priceString
+        while trimmed.hasSuffix("0") && trimmed.contains(".") {
+            trimmed.removeLast()
+        }
+        if trimmed.hasSuffix(".") {
+            trimmed.removeLast()
+        }
+        let trimmedDecimals: Int
+        if let dot = trimmed.firstIndex(of: ".") {
+            trimmedDecimals = trimmed.distance(from: dot, to: trimmed.endIndex) - 1
+        } else {
+            trimmedDecimals = 0
+        }
+        return max(TickerData.standardDecimalPlaces(for: price), trimmedDecimals)
+    }
+
     public static func parseRestTicker(
         _ json: [String: Any],
         symbol: CryptoSymbol,
@@ -31,6 +51,7 @@ public enum BinanceDataParser {
         return TickerData(
             symbol: symbol.symbol,
             price: lastPrice,
+            priceDecimals: decimalPlaces(from: lastPriceStr),
             priceChange: priceChange,
             priceChangePercent: priceChangePercent,
             high24h: high,
@@ -95,6 +116,7 @@ public enum BinanceDataParser {
         let ticker = TickerData(
             symbol: symbol.symbol,
             price: closePrice,
+            priceDecimals: decimalPlaces(from: closePriceStr),
             priceChange: priceChange,
             priceChangePercent: priceChangePercent,
             high24h: high,
@@ -204,6 +226,7 @@ public enum BinanceDataParser {
         return TickerData(
             symbol: symbol.symbol,
             price: lastPrice,
+            priceDecimals: decimalPlaces(from: priceStr),
             priceChange: priceChange,
             priceChangePercent: priceChangePercent,
             high24h: high,
@@ -261,6 +284,7 @@ public enum BinanceDataParser {
         let ticker = TickerData(
             symbol: symbol.symbol,
             price: price,
+            priceDecimals: decimalPlaces(from: priceStr),
             priceChange: priceChange,
             priceChangePercent: priceChangePercent,
             high24h: high,
@@ -327,6 +351,7 @@ public enum BinanceDataParser {
         return TickerData(
             symbol: symbol.symbol,
             price: lastPrice,
+            priceDecimals: decimalPlaces(from: lastStr),
             priceChange: priceChange,
             priceChangePercent: priceChangePercent,
             high24h: high,
@@ -387,6 +412,7 @@ public enum BinanceDataParser {
         let ticker = TickerData(
             symbol: symbol.symbol,
             price: price,
+            priceDecimals: existing?.priceDecimals,
             priceChange: priceChange,
             priceChangePercent: priceChangePercent,
             high24h: high,

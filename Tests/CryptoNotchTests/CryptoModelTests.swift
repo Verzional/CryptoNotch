@@ -555,4 +555,50 @@ final class CryptoModelTests: XCTestCase {
         manager.removeAlert(id: alert2.id)
         XCTAssertEqual(manager.alerts.count, 0)
     }
+
+    func testTickerPriceDecimalsAndRounding() {
+        // ARB style ticker (4 decimals)
+        let arb = TickerData(
+            symbol: "ARBUSDT",
+            price: 0.1877,
+            priceDecimals: BinanceDataParser.decimalPlaces(from: "0.1877")
+        )
+        XCTAssertEqual(arb.priceDecimals, 4)
+
+        // Calculate +2%: 0.1877 * 1.02 = 0.191454 -> should round to 0.1915 (4 decimals)
+        let arbFactor = pow(10.0, Double(arb.priceDecimals))
+        let arbPlus2 = ((arb.price * 1.02) * arbFactor).rounded() / arbFactor
+        XCTAssertEqual(arbPlus2, 0.1915)
+        let arbFormatted = PriceFormatterCache.shared.format(arbPlus2, decimals: arb.priceDecimals)
+        XCTAssertEqual(arbFormatted, "$0.1915")
+
+        // ARB style ticker with actual Binance 8-digit padded string "0.18630000"
+        let arbPadded = TickerData(
+            symbol: "ARBUSDT",
+            price: 0.1863,
+            priceDecimals: BinanceDataParser.decimalPlaces(from: "0.18630000")
+        )
+        XCTAssertEqual(arbPadded.priceDecimals, 4)
+
+        // Calculate +2% on 0.1863: 0.1863 * 1.02 = 0.190026 -> should round to 0.1900 (4 decimals)
+        let arbPaddedFactor = pow(10.0, Double(arbPadded.priceDecimals))
+        let arbPaddedPlus2 = ((arbPadded.price * 1.02) * arbPaddedFactor).rounded() / arbPaddedFactor
+        XCTAssertEqual(arbPaddedPlus2, 0.19)
+        let arbPaddedFormatted = PriceFormatterCache.shared.format(arbPaddedPlus2, decimals: arbPadded.priceDecimals)
+        XCTAssertEqual(arbPaddedFormatted, "$0.1900")
+        XCTAssertEqual(arbPaddedFormatted.replacingOccurrences(of: "$", with: ""), "0.1900")
+
+        // BTC style ticker with actual Binance 8-digit padded string "67450.20000000"
+        let btc = TickerData(
+            symbol: "BTCUSDT",
+            price: 67450.25,
+            priceDecimals: BinanceDataParser.decimalPlaces(from: "67450.20000000")
+        )
+        XCTAssertEqual(btc.priceDecimals, 2)
+        let btcFactor = pow(10.0, Double(btc.priceDecimals))
+        let btcPlus2 = ((btc.price * 1.02) * btcFactor).rounded() / btcFactor
+        XCTAssertEqual(btcPlus2, 68799.26)
+        let btcFormatted = PriceFormatterCache.shared.format(btcPlus2, decimals: btc.priceDecimals)
+        XCTAssertEqual(btcFormatted, "$68,799.26")
+    }
 }

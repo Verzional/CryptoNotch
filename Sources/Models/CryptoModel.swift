@@ -168,6 +168,7 @@ public enum PriceDirection: Equatable {
 public struct TickerData: Equatable {
     public let symbol: String
     public let price: Double
+    public let priceDecimals: Int
     public let priceChange: Double
     public let priceChangePercent: Double
     public let high24h: Double
@@ -193,9 +194,24 @@ public struct TickerData: Equatable {
     public let lastUpdated: Date
     public var direction: PriceDirection = .neutral
 
+    public static func standardDecimalPlaces(for price: Double) -> Int {
+        if price >= 10.0 {
+            return 2
+        } else if price >= 1.0 {
+            return 4
+        } else if price >= 0.01 {
+            return 4
+        } else if price >= 0.0001 {
+            return 6
+        } else {
+            return 8
+        }
+    }
+
     public init(
         symbol: String,
         price: Double,
+        priceDecimals: Int? = nil,
         priceChange: Double = 0.0,
         priceChangePercent: Double = 0.0,
         high24h: Double = 0.0,
@@ -223,6 +239,7 @@ public struct TickerData: Equatable {
     ) {
         self.symbol = symbol
         self.price = price
+        self.priceDecimals = priceDecimals ?? TickerData.standardDecimalPlaces(for: price)
         self.priceChange = priceChange
         self.priceChangePercent = priceChangePercent
         self.high24h = high24h
@@ -582,6 +599,7 @@ final class PriceFormatterCache: @unchecked Sendable {
     private let mediumFormatter: NumberFormatter
     private let smallFormatter: NumberFormatter
     private let microFormatter: NumberFormatter
+    private var customFormatters: [Int: NumberFormatter] = [:]
 
     private init() {
         func makeFormatter(minFrac: Int, maxFrac: Int) -> NumberFormatter {
@@ -595,13 +613,33 @@ final class PriceFormatterCache: @unchecked Sendable {
         }
         self.largeFormatter = makeFormatter(minFrac: 2, maxFrac: 2)
         self.mediumFormatter = makeFormatter(minFrac: 2, maxFrac: 4)
-        self.smallFormatter = makeFormatter(minFrac: 2, maxFrac: 6)
+        self.smallFormatter = makeFormatter(minFrac: 2, maxFrac: 4)
         self.microFormatter = makeFormatter(minFrac: 2, maxFrac: 8)
     }
 
-    func format(_ value: Double) -> String {
+    func format(_ value: Double, decimals: Int? = nil) -> String {
         lock.lock()
         defer { lock.unlock() }
+
+        if let dec = decimals {
+            let formatter: NumberFormatter
+            if let cached = customFormatters[dec] {
+                formatter = cached
+            } else {
+                let f = NumberFormatter()
+                f.locale = Locale(identifier: "en_US_POSIX")
+                f.numberStyle = .decimal
+                f.usesGroupingSeparator = true
+                f.minimumFractionDigits = dec
+                f.maximumFractionDigits = dec
+                customFormatters[dec] = f
+                formatter = f
+            }
+            if let str = formatter.string(from: NSNumber(value: value)) {
+                return "$" + str
+            }
+            return String(format: "$%.*f", dec, value)
+        }
 
         let formatter: NumberFormatter
         if value >= 1000 {
