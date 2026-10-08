@@ -90,6 +90,7 @@ public struct PriceAlertPopover: View {
 
                     Text("\(alerts.count)/3")
                         .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+                        .contentTransition(.identity)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.white.opacity(0.10))
