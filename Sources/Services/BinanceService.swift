@@ -131,7 +131,9 @@ public final class BinanceService: ObservableObject {
             do {
                 switch exchange {
                 case .binance:
+                    async let precisionTask = self.restClient.fetchPrecision(symbol: formatted)
                     let json = try await self.restClient.fetch24hTicker(symbol: formatted)
+                    let precision = await precisionTask
                     guard !Task.isCancelled, self.currentSymbol.symbol == targetSymbol.symbol, self.selectedExchange == exchange else { return }
 
                     self.isInvalidSymbol = false
@@ -139,7 +141,7 @@ public final class BinanceService: ObservableObject {
                     self.lastValidSymbol = targetSymbol
                     self.saveSelectedSymbol()
 
-                    if let parsed = BinanceDataParser.parseRestTicker(json, symbol: targetSymbol, existing: self.ticker) {
+                    if let parsed = BinanceDataParser.parseRestTicker(json, symbol: targetSymbol, existing: self.ticker, knownDecimals: precision) {
                         self.ticker = parsed
                     }
 
@@ -351,7 +353,8 @@ public final class BinanceService: ObservableObject {
                     self.ticker = current
                 }
             } else if stream.contains("@ticker") || stream.isEmpty {
-                if let (newTicker, dir) = BinanceDataParser.parseWebSocketTicker(payload, symbol: currentSymbol, existing: self.ticker) {
+                let precision = self.restClient.cachedPrecision(for: currentSymbol.symbol)
+                if let (newTicker, dir) = BinanceDataParser.parseWebSocketTicker(payload, symbol: currentSymbol, existing: self.ticker, knownDecimals: precision) {
                     self.ticker = newTicker
                     if dir != .neutral {
                         triggerFlash(dir)

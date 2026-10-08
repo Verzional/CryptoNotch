@@ -3,7 +3,10 @@ import Foundation
 /// Pure functional parser for Binance REST and WebSocket JSON payloads.
 public enum BinanceDataParser {
 
-    public static func decimalPlaces(from priceString: String?) -> Int? {
+    public static func decimalPlaces(from priceString: String?, knownDecimals: Int? = nil) -> Int? {
+        if let known = knownDecimals {
+            return known
+        }
         guard let priceString = priceString, let price = Double(priceString) else {
             return nil
         }
@@ -26,7 +29,8 @@ public enum BinanceDataParser {
     public static func parseRestTicker(
         _ json: [String: Any],
         symbol: CryptoSymbol,
-        existing: TickerData?
+        existing: TickerData?,
+        knownDecimals: Int? = nil
     ) -> TickerData? {
         guard let lastPriceStr = json["lastPrice"] as? String,
               let lastPrice = Double(lastPriceStr) else { return nil }
@@ -51,7 +55,7 @@ public enum BinanceDataParser {
         return TickerData(
             symbol: symbol.symbol,
             price: lastPrice,
-            priceDecimals: decimalPlaces(from: lastPriceStr),
+            priceDecimals: knownDecimals ?? existing?.priceDecimals ?? decimalPlaces(from: lastPriceStr),
             priceChange: priceChange,
             priceChangePercent: priceChangePercent,
             high24h: high,
@@ -75,7 +79,8 @@ public enum BinanceDataParser {
     public static func parseWebSocketTicker(
         _ json: [String: Any],
         symbol: CryptoSymbol,
-        existing: TickerData?
+        existing: TickerData?,
+        knownDecimals: Int? = nil
     ) -> (ticker: TickerData, direction: PriceDirection)? {
         guard let closePriceStr = json["c"] as? String,
               let closePrice = Double(closePriceStr) else { return nil }
@@ -116,7 +121,7 @@ public enum BinanceDataParser {
         let ticker = TickerData(
             symbol: symbol.symbol,
             price: closePrice,
-            priceDecimals: decimalPlaces(from: closePriceStr),
+            priceDecimals: knownDecimals ?? existing?.priceDecimals ?? decimalPlaces(from: closePriceStr),
             priceChange: priceChange,
             priceChangePercent: priceChangePercent,
             high24h: high,

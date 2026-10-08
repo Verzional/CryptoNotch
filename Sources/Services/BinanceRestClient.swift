@@ -13,6 +13,63 @@ public final class BinanceRestClient {
     private let primaryRestBase = "https://data-api.binance.vision/api/v3"
     private let session: URLSession
 
+    private var precisionCache: [String: Int] = [
+        "BTCUSDT": 2, "ETHUSDT": 2, "BNBUSDT": 2, "SOLUSDT": 2, "XRPUSDT": 4,
+        "DOGEUSDT": 5, "ADAUSDT": 4, "TRXUSDT": 5, "LINKUSDT": 3, "INJUSDT": 3,
+        "ARBUSDT": 4, "SUIUSDT": 4, "PEPEUSDT": 8, "SHIBUSDT": 8, "PUMPUSDT": 6,
+        "NEARUSDT": 3, "DOTUSDT": 3, "ATOMUSDT": 3, "AVAXUSDT": 3, "TIAUSDT": 4
+    ]
+    private let cacheLock = NSLock()
+
+    public func cachedPrecision(for symbol: String) -> Int? {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        let clean = symbol.uppercased().replacingOccurrences(of: "/", with: "").replacingOccurrences(of: "-", with: "")
+        return precisionCache[clean]
+    }
+
+    private func setCachedPrecision(_ dec: Int, for symbol: String) {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        precisionCache[symbol] = dec
+    }
+
+    public func fetchPrecision(symbol: String) async -> Int? {
+        let cleanSymbol = symbol.uppercased().replacingOccurrences(of: "/", with: "").replacingOccurrences(of: "-", with: "")
+        if let cached = cachedPrecision(for: cleanSymbol) {
+            return cached
+        }
+
+        guard let encodedSymbol = cleanSymbol.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "\(primaryRestBase)/exchangeInfo?symbol=\(encodedSymbol)") else {
+            return nil
+        }
+
+        guard let (data, _) = try? await session.data(from: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let symbols = json["symbols"] as? [[String: Any]],
+              let symObj = symbols.first,
+              let filters = symObj["filters"] as? [[String: Any]] else {
+            return nil
+        }
+
+        for f in filters {
+            if (f["filterType"] as? String) == "PRICE_FILTER",
+               let tickStr = f["tickSize"] as? String,
+               let tick = Double(tickStr), tick > 0 {
+                let dec: Int
+                if tick >= 1.0 {
+                    dec = 0
+                } else {
+                    dec = max(0, min(8, Int(round(-log10(tick)))))
+                }
+                setCachedPrecision(dec, for: cleanSymbol)
+                return dec
+            }
+        }
+        return nil
+    }
+
     public init(session: URLSession? = nil) {
         if let session = session {
             self.session = session
