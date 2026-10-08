@@ -209,7 +209,8 @@ public struct PriceAlertPopover: View {
             symbol: symbol.symbol,
             exchange: binanceService.selectedExchange,
             targetPrice: target,
-            direction: effectiveDirection
+            direction: effectiveDirection,
+            decimals: priceDecimals
         )
         targetPriceText = ""
 

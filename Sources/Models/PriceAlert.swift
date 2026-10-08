@@ -30,6 +30,7 @@ public struct PriceAlert: Identifiable, Codable, Equatable {
     public var isTriggered: Bool
     public let createdAt: Date
     public var triggeredAt: Date?
+    public let decimals: Int?
 
     public init(
         id: UUID = UUID(),
@@ -39,7 +40,8 @@ public struct PriceAlert: Identifiable, Codable, Equatable {
         direction: AlertDirection,
         isTriggered: Bool = false,
         createdAt: Date = Date(),
-        triggeredAt: Date? = nil
+        triggeredAt: Date? = nil,
+        decimals: Int? = nil
     ) {
         self.id = id
         self.symbol = symbol
@@ -49,10 +51,11 @@ public struct PriceAlert: Identifiable, Codable, Equatable {
         self.isTriggered = isTriggered
         self.createdAt = createdAt
         self.triggeredAt = triggeredAt
+        self.decimals = decimals
     }
 
     public var formattedTargetPrice: String {
         guard targetPrice > 0 else { return "$0.00" }
-        return PriceFormatterCache.shared.format(targetPrice)
+        return PriceFormatterCache.shared.format(targetPrice, decimals: decimals)
     }
 }

@@ -73,14 +73,16 @@ public final class AlertManager: NSObject, ObservableObject {
         symbol: String,
         exchange: CryptoExchange = .binance,
         targetPrice: Double,
-        direction: AlertDirection
+        direction: AlertDirection,
+        decimals: Int? = nil
     ) -> PriceAlert {
         let cleanSymbol = CryptoSymbol.from(rawInput: symbol, defaultExchange: exchange).symbol
         let alert = PriceAlert(
             symbol: cleanSymbol,
             exchange: exchange,
             targetPrice: targetPrice,
-            direction: direction
+            direction: direction,
+            decimals: decimals
         )
         alerts.append(alert)
         saveAlerts()
@@ -209,10 +211,6 @@ final class AlertNotificationDelegate: NSObject, UNUserNotificationCenterDelegat
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        if #available(macOS 14.0, *) {
-            completionHandler([.banner, .sound])
-        } else {
-            completionHandler([.alert, .sound])
-        }
+        completionHandler([.banner, .sound, .list])
     }
 }
