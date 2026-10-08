@@ -600,5 +600,33 @@ final class CryptoModelTests: XCTestCase {
         XCTAssertEqual(btcPlus2, 68799.26)
         let btcFormatted = PriceFormatterCache.shared.format(btcPlus2, decimals: btc.priceDecimals)
         XCTAssertEqual(btcFormatted, "$68,799.26")
+
+        // INJ style ticker with actual Binance 8-digit padded string "7.44800000" (should be 3 decimals, not 4)
+        let injDecimals = BinanceDataParser.decimalPlaces(from: "7.44800000")
+        XCTAssertEqual(injDecimals, 3)
+        let inj = TickerData(
+            symbol: "INJUSDT",
+            price: 7.448,
+            priceDecimals: injDecimals
+        )
+        XCTAssertEqual(inj.priceDecimals, 3)
+        XCTAssertEqual(inj.formattedPrice, "$7.448")
+        let injPlaceholder = PriceFormatterCache.shared.format(inj.price, decimals: inj.priceDecimals)
+            .replacingOccurrences(of: "$", with: "")
+        XCTAssertEqual(injPlaceholder, "7.448")
+
+        // PUMP style ticker with actual Binance 8-digit padded string "0.00628000" (should preserve 6 decimals, not drop trailing 0)
+        let pumpDecimals = BinanceDataParser.decimalPlaces(from: "0.00628000")
+        XCTAssertEqual(pumpDecimals, 6)
+        let pump = TickerData(
+            symbol: "PUMPUSDT",
+            price: 0.00628,
+            priceDecimals: pumpDecimals
+        )
+        XCTAssertEqual(pump.priceDecimals, 6)
+        XCTAssertEqual(pump.formattedPrice, "$0.006280")
+        let pumpPlaceholder = PriceFormatterCache.shared.format(pump.price, decimals: pump.priceDecimals)
+            .replacingOccurrences(of: "$", with: "")
+        XCTAssertEqual(pumpPlaceholder, "0.006280")
     }
 }

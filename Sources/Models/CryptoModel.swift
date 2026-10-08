@@ -195,10 +195,8 @@ public struct TickerData: Equatable {
     public var direction: PriceDirection = .neutral
 
     public static func standardDecimalPlaces(for price: Double) -> Int {
-        if price >= 10.0 {
+        if price >= 1.0 {
             return 2
-        } else if price >= 1.0 {
-            return 4
         } else if price >= 0.01 {
             return 4
         } else if price >= 0.0001 {
@@ -321,7 +319,7 @@ public struct TickerData: Equatable {
 
     private func formatPriceValue(_ value: Double) -> String {
         guard value > 0 else { return "$0.00" }
-        return PriceFormatterCache.shared.format(value)
+        return PriceFormatterCache.shared.format(value, decimals: priceDecimals)
     }
 
     public var formattedBaseVolume: String {
