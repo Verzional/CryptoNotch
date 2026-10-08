@@ -7,6 +7,24 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         <description>Most recent updates to CryptoNotch</description>
         <language>en</language>
         <item>
+            <title>CryptoNotch 1.6.4</title>
+            <pubDate>Thu, 08 Oct 2026 17:42:39 +0700</pubDate>
+            <sparkle:version>16</sparkle:version>
+            <sparkle:shortVersionString>1.6.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<h2>CryptoNotch 1.6.4</h2>
+<ul>
+  <li>docs: update README with Hyperliquid, price alerts, display targets, and new shortcuts</li>
+  <li>fix(ui): disable text content transition on price alert counter pill</li>
+  <li>fix(alerts): store token tick precision in PriceAlert and update notification presentation options</li>
+  <li>fix(models): standardize price decimal defaults and pass priceDecimals into stat formatters</li>
+  <li>fix(services): add authoritative Binance PRICE_FILTER tickSize precision queries and caching</li>
+</ul>
+            ]]></description>
+            <enclosure url="https://github.com/Verzional/CryptoNotch/releases/download/v1.6.4/CryptoNotch.dmg" sparkle:edSignature="7M90QKg/H8OmEk5BXzK/7khH0qC06+OsMHPz9zDmwp7aF9vEQKsiTXyBiDY826+jOCJ8tpzdd9ueuY2nRIZ3Ag==" length="3645513" type="application/octet-stream"></enclosure>
+        </item>
+        <item>
             <title>CryptoNotch 1.6.3</title>
             <pubDate>Wed, 07 Oct 2026 10:07:22 +0700</pubDate>
             <sparkle:version>15</sparkle:version>
@@ -239,6 +257,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: fzVJ3UXkyasq4a8qLUjwoORupYTevmpTxteoDLoDDSsVA47tREIjZjsvgknfKT3RifwuN70z35a+bctv0cO2Cg==
-length: 17434
+edSignature: CJpbi0FwKYgDucT71RSV2x3L7DPrql7LDOFKJc3YNzeQ8RbnqH/hO2vI/knah7jDRSbdukyJ/YDFXIH6Eb3mAA==
+length: 18658
 -->
