@@ -7,6 +7,22 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         <description>Most recent updates to CryptoNotch</description>
         <language>en</language>
         <item>
+            <title>CryptoNotch 1.6.5</title>
+            <pubDate>Wed, 21 Oct 2026 08:16:04 +0700</pubDate>
+            <sparkle:version>17</sparkle:version>
+            <sparkle:shortVersionString>1.6.5</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<h2>CryptoNotch 1.6.5</h2>
+<ul>
+  <li>Eliminated artificial collapsed slop padding to restore click pass-through for underlying app buttons (e.g., Apple Notes toolbar).</li>
+  <li>Added arc-precision hit-testing matching the notch curve geometry.</li>
+  <li>Prevented accidental hover expansions when interacting near the notch bottom border.</li>
+</ul>
+            ]]></description>
+            <enclosure url="https://github.com/Verzional/CryptoNotch/releases/download/v1.6.5/CryptoNotch.dmg" sparkle:edSignature="Ai4c53Lwmtr5sfylWUyqOo2QQQy/cDztrwtecPgWjzqiA8cCro85WnJu7bUvtZP429b7uahkN/BTxO/HcM4qCA==" length="3645880" type="application/octet-stream"></enclosure>
+        </item>
+        <item>
             <title>CryptoNotch 1.6.4</title>
             <pubDate>Thu, 08 Oct 2026 17:42:39 +0700</pubDate>
             <sparkle:version>16</sparkle:version>
@@ -257,6 +273,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: CJpbi0FwKYgDucT71RSV2x3L7DPrql7LDOFKJc3YNzeQ8RbnqH/hO2vI/knah7jDRSbdukyJ/YDFXIH6Eb3mAA==
-length: 18658
+edSignature: cxxkrKpsUF3S238ylekWOXSck5Xm7FCvEUVOEI9d8g67Q6jBnxDll+UKTRFqjRqVxeBjUascdCqvusYZi/27DQ==
+length: 19703
 -->
