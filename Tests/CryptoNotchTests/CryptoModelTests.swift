@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 @testable import CryptoNotch
 
 final class CryptoModelTests: XCTestCase {
@@ -628,5 +629,80 @@ final class CryptoModelTests: XCTestCase {
         let pumpPlaceholder = PriceFormatterCache.shared.format(pump.price, decimals: pump.priceDecimals)
             .replacingOccurrences(of: "$", with: "")
         XCTAssertEqual(pumpPlaceholder, "0.006280")
+    }
+
+    @MainActor
+    func testDynamicIslandHitTestAndShapePassThrough() {
+        let host = DynamicIslandHostingView(rootView: Text("TestNotch"))
+        let geometry = NotchGeometry(hasNotch: true, notchWidth: 160, notchHeight: 32, notchCenter: 210, earWidth: 110)
+        host.geometryProvider = { geometry }
+        host.frame = NSRect(x: 0, y: 0, width: geometry.expandedWidth, height: geometry.expandedHeight)
+
+        var isExpanded = false
+        var isCollapsing = false
+        var isNotchDisabled = false
+
+        host.isExpandedProvider = { isExpanded }
+        host.isCollapsingProvider = { isCollapsing }
+        host.isNotchDisabledProvider = { isNotchDisabled }
+
+        let collapsedWidth = geometry.collapsedWidth // 160 + 220 = 380
+        let collapsedHeight = geometry.collapsedHeight // 32 + 1 = 33
+        let minX = (geometry.expandedWidth - collapsedWidth) / 2 // (420 - 380) / 2 = 20
+        let maxX = minX + collapsedWidth // 400
+
+        // 1. Collapsed state: Inside collapsed notch rect
+        let insidePoint = NSPoint(x: minX + (collapsedWidth / 2), y: collapsedHeight / 2)
+        XCTAssertTrue(host.activeShapeContains(insidePoint))
+        XCTAssertNotNil(host.hitTest(insidePoint))
+
+        // 2. Collapsed state: Directly below notch (e.g. 2pt and 8pt below, where toolbar buttons sit)
+        let justBelowPoint = NSPoint(x: minX + (collapsedWidth / 2), y: collapsedHeight + 2)
+        XCTAssertFalse(host.activeShapeContains(justBelowPoint))
+        XCTAssertNil(host.hitTest(justBelowPoint))
+
+        let toolbarPillPoint = NSPoint(x: minX + (collapsedWidth / 2), y: collapsedHeight + 8)
+        XCTAssertFalse(host.activeShapeContains(toolbarPillPoint))
+        XCTAssertNil(host.hitTest(toolbarPillPoint))
+
+        // 3. Collapsed state: Horizontally outside notch (to the left or right of ears)
+        let leftOfEar = NSPoint(x: minX - 5, y: collapsedHeight / 2)
+        XCTAssertFalse(host.activeShapeContains(leftOfEar))
+        XCTAssertNil(host.hitTest(leftOfEar))
+
+        let rightOfEar = NSPoint(x: maxX + 5, y: collapsedHeight / 2)
+        XCTAssertFalse(host.activeShapeContains(rightOfEar))
+        XCTAssertNil(host.hitTest(rightOfEar))
+
+        // 4. Collapsed state: Bottom corner curve test (outside the 10pt radius arc)
+        // Corner bounding box: x in [minX, minX + 10], y in [collapsedHeight - 10, collapsedHeight]
+        // Very corner tip (minX + 0.5, collapsedHeight - 0.5) is outside circle of radius 10 centered at (minX + 10, collapsedHeight - 10)
+        let cornerTip = NSPoint(x: minX + 0.5, y: collapsedHeight - 0.5)
+        XCTAssertFalse(host.activeShapeContains(cornerTip))
+        XCTAssertNil(host.hitTest(cornerTip))
+
+        // 5. Disabled notch state: Everything passes through
+        isNotchDisabled = true
+        XCTAssertNil(host.hitTest(insidePoint))
+        isNotchDisabled = false
+
+        // 6. Expanded state: Expanded area captures clicks, outside returns nil
+        isExpanded = true
+        let insideExpanded = NSPoint(x: minX + (collapsedWidth / 2), y: collapsedHeight + 50)
+        XCTAssertTrue(host.activeShapeContains(insideExpanded))
+        XCTAssertNotNil(host.hitTest(insideExpanded))
+
+        let belowExpanded = NSPoint(x: minX + (collapsedWidth / 2), y: geometry.expandedHeight + 10)
+        XCTAssertFalse(host.activeShapeContains(belowExpanded))
+        XCTAssertNil(host.hitTest(belowExpanded))
+
+        // 7. Mid-collapse state: Should retain expanded bounds temporarily during collapse animation
+        isExpanded = false
+        isCollapsing = true
+        XCTAssertTrue(host.activeShapeContains(insideExpanded))
+        XCTAssertNotNil(host.hitTest(insideExpanded))
+        isCollapsing = false
+        XCTAssertFalse(host.activeShapeContains(insideExpanded))
+        XCTAssertNil(host.hitTest(insideExpanded))
     }
 }

@@ -183,17 +183,44 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
         let width = isExpanded ? geometry.expandedWidth : geometry.collapsedWidth
         let height = isExpanded ? geometry.expandedHeight : geometry.collapsedHeight
         let minX = (bounds.width - width) / 2
-        let slopX: CGFloat = isExpanded ? 0 : 8
-        let slopY: CGFloat = isExpanded ? 0 : 10
-        return NSRect(x: minX - slopX, y: 0, width: width + (slopX * 2), height: height + slopY)
+        return NSRect(x: minX, y: 0, width: width, height: height)
+    }
+
+    func activeShapeContains(_ point: NSPoint) -> Bool {
+        let rect = activeRect()
+        guard rect.contains(point) else { return false }
+
+        let geometry = geometryProvider()
+        let isExpanded = isExpandedProvider() || isCollapsingProvider()
+        let radius: CGFloat = isExpanded ? 20 : (geometry.hasNotch ? 10 : 12)
+
+        // Check bottom-left corner arc
+        if point.x < rect.minX + radius && point.y > rect.maxY - radius {
+            let dx = point.x - (rect.minX + radius)
+            let dy = point.y - (rect.maxY - radius)
+            if (dx * dx + dy * dy) > radius * radius {
+                return false
+            }
+        }
+
+        // Check bottom-right corner arc
+        if point.x > rect.maxX - radius && point.y > rect.maxY - radius {
+            let dx = point.x - (rect.maxX - radius)
+            let dy = point.y - (rect.maxY - radius)
+            if (dx * dx + dy * dy) > radius * radius {
+                return false
+            }
+        }
+
+        return true
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
         if isNotchDisabledProvider() {
             return nil
         }
-        let localPoint = convert(point, from: superview)
-        if !activeRect().contains(localPoint) {
+        let localPoint = superview != nil ? convert(point, from: superview) : point
+        if !activeShapeContains(localPoint) {
             return nil
         }
         return super.hitTest(point) ?? self
@@ -216,7 +243,7 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
 
     override func mouseDown(with event: NSEvent) {
         let localPoint = convert(event.locationInWindow, from: nil)
-        if activeRect().contains(localPoint), let window = self.window, !window.isKeyWindow {
+        if activeShapeContains(localPoint), let window = self.window, !window.isKeyWindow {
             window.makeKey()
             window.makeFirstResponder(self)
         }
@@ -230,7 +257,7 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
         }
 
         let localPoint = convert(event.locationInWindow, from: nil)
-        guard activeRect().contains(localPoint) else {
+        guard activeShapeContains(localPoint) else {
             super.scrollWheel(with: event)
             return
         }
@@ -312,7 +339,7 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
             return
         }
         let localPoint = convert(event.locationInWindow, from: nil)
-        let inside = activeRect().contains(localPoint)
+        let inside = activeShapeContains(localPoint)
         setHovered(inside)
     }
 
