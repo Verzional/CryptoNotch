@@ -177,21 +177,21 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
         self.trackingAreaRef = area
     }
 
-    func activeRect() -> NSRect {
+    func activeRect(forHitTest: Bool = false) -> NSRect {
         let geometry = geometryProvider()
-        let isExpanded = isExpandedProvider() || isCollapsingProvider()
+        let isExpanded = isExpandedProvider() || (!forHitTest && isCollapsingProvider())
         let width = isExpanded ? geometry.expandedWidth : geometry.collapsedWidth
         let height = isExpanded ? geometry.expandedHeight : geometry.collapsedHeight
-        let minX = (bounds.width - width) / 2
+        let minX = max(0, (bounds.width - width) / 2)
         return NSRect(x: minX, y: 0, width: width, height: height)
     }
 
-    func activeShapeContains(_ point: NSPoint) -> Bool {
-        let rect = activeRect()
+    func activeShapeContains(_ point: NSPoint, forHitTest: Bool = false) -> Bool {
+        let rect = activeRect(forHitTest: forHitTest)
         guard rect.contains(point) else { return false }
 
         let geometry = geometryProvider()
-        let isExpanded = isExpandedProvider() || isCollapsingProvider()
+        let isExpanded = isExpandedProvider() || (!forHitTest && isCollapsingProvider())
         let radius: CGFloat = isExpanded ? 20 : (geometry.hasNotch ? 10 : 12)
 
         // Check bottom-left corner arc
@@ -220,7 +220,7 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
             return nil
         }
         let localPoint = superview != nil ? convert(point, from: superview) : point
-        if !activeShapeContains(localPoint) {
+        if !activeShapeContains(localPoint, forHitTest: true) {
             return nil
         }
         return super.hitTest(point) ?? self
@@ -243,7 +243,7 @@ final class DynamicIslandHostingView<Content: View>: NSHostingView<Content> {
 
     override func mouseDown(with event: NSEvent) {
         let localPoint = convert(event.locationInWindow, from: nil)
-        if activeShapeContains(localPoint), let window = self.window, !window.isKeyWindow {
+        if activeShapeContains(localPoint, forHitTest: true), let window = self.window, !window.isKeyWindow {
             window.makeKey()
             window.makeFirstResponder(self)
         }
@@ -421,12 +421,22 @@ public final class DynamicIslandController: NSObject, ObservableObject {
             .sink { [weak self] pinned in
                 guard let self = self else { return }
                 if pinned && !self.isExpanded {
+                    self.isCollapsing = false
+                    self.updatePanelFrame(forceExpanded: true)
                     withAnimation(Self.expandAnimation) {
                         self.isExpanded = true
                     }
                 } else if !pinned && !self.isHovered && !self.isCustomInputShowing && !self.isCustomizingGrid && self.isExpanded {
+                    self.isCollapsing = true
                     withAnimation(Self.collapseAnimation) {
                         self.isExpanded = false
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { [weak self] in
+                        guard let self = self else { return }
+                        if !self.isExpanded {
+                            self.isCollapsing = false
+                            self.updatePanelFrame()
+                        }
                     }
                 }
             }
@@ -436,18 +446,28 @@ public final class DynamicIslandController: NSObject, ObservableObject {
             .dropFirst()
             .sink { [weak self] disabled in
                 guard let self = self else { return }
+                self.collapseWorkItem?.cancel()
+                self.collapseWorkItem = nil
+                self.isCollapsing = false
+                self.isHovered = false
+                self.isCustomInputShowing = false
+                self.isCustomizingGrid = false
+                self.isAlertShowing = false
+
                 if disabled {
                     if self.isExpanded {
                         withAnimation(Self.collapseAnimation) {
                             self.isExpanded = false
                         }
                     }
-                    self.isCustomInputShowing = false
-                    self.isCustomizingGrid = false
-                    self.isHovered = false
                     self.panel.ignoresMouseEvents = true
+                    self.panel.makeFirstResponder(nil)
+                    self.updatePanelFrame()
                 } else {
+                    self.isExpanded = self.settings.isPinned
                     self.panel.ignoresMouseEvents = false
+                    self.panel.makeFirstResponder(nil)
+                    self.updatePanelFrame()
                 }
             }
             .store(in: &cancellables)
@@ -502,8 +522,17 @@ public final class DynamicIslandController: NSObject, ObservableObject {
             } else if self.isCustomizingGrid {
                 self.isCustomizingGrid = false
             } else if self.isExpanded && !self.settings.isPinned {
+                self.isCollapsing = true
                 withAnimation(Self.collapseAnimation) {
                     self.isExpanded = false
+                }
+                self.panel.makeFirstResponder(nil)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { [weak self] in
+                    guard let self = self else { return }
+                    if !self.isExpanded {
+                        self.isCollapsing = false
+                        self.updatePanelFrame()
+                    }
                 }
             }
         }
@@ -576,6 +605,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
             isCollapsing = false
 
             if !isExpanded {
+                updatePanelFrame(forceExpanded: true)
                 withAnimation(Self.expandAnimation) {
                     isExpanded = true
                 }
@@ -600,6 +630,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
                     guard let self = self else { return }
                     if !self.isExpanded {
                         self.isCollapsing = false
+                        self.updatePanelFrame()
                     }
                 }
             }
@@ -610,14 +641,28 @@ public final class DynamicIslandController: NSObject, ObservableObject {
 
     public func toggleExpansion() {
         guard !settings.isNotchDisabled else { return }
-        let anim = !isExpanded ? Self.expandAnimation : Self.collapseAnimation
-        withAnimation(anim) {
-            isExpanded.toggle()
-        }
-        if isExpanded {
+        if !isExpanded {
+            isCollapsing = false
+            updatePanelFrame(forceExpanded: true)
+            withAnimation(Self.expandAnimation) {
+                isExpanded = true
+            }
             panel.makeKey()
             if let host = hostingView {
                 panel.makeFirstResponder(host)
+            }
+        } else {
+            isCollapsing = true
+            withAnimation(Self.collapseAnimation) {
+                isExpanded = false
+            }
+            panel.makeFirstResponder(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { [weak self] in
+                guard let self = self else { return }
+                if !self.isExpanded {
+                    self.isCollapsing = false
+                    self.updatePanelFrame()
+                }
             }
         }
     }
@@ -659,15 +704,17 @@ public final class DynamicIslandController: NSObject, ObservableObject {
     }
 
     /// Positions the island window centered at the top edge of the screen, hugging the notch or floating on external displays.
-    public func updatePanelFrame(animated: Bool = false) {
+    /// Resizes the window dynamically between collapsed bounds (33pt) and expanded bounds (159pt).
+    public func updatePanelFrame(forceExpanded: Bool? = nil) {
         let screen = resolveTargetScreen()
         let geometry = NotchGeometry.current(for: screen)
         self.targetScreen = screen
         self.currentGeometry = geometry
 
         let screenFrame = screen.frame
-        let width = geometry.expandedWidth
-        let height = geometry.expandedHeight
+        let shouldBeExpanded = forceExpanded ?? (isExpanded || isCollapsing)
+        let width = shouldBeExpanded ? geometry.expandedWidth : geometry.collapsedWidth
+        let height = shouldBeExpanded ? geometry.expandedHeight : geometry.collapsedHeight
 
         let x = geometry.notchCenter - (width / 2)
         let y = screenFrame.maxY - height

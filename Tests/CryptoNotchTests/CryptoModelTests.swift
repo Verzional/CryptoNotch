@@ -396,6 +396,22 @@ final class CryptoModelTests: XCTestCase {
         controller.toggleDisableNotch()
         XCTAssertFalse(settings.isNotchDisabled)
         XCTAssertFalse(controller.panel.ignoresMouseEvents)
+        XCTAssertFalse(controller.isExpanded)
+        XCTAssertFalse(controller.isCollapsing)
+
+        // Panel frame should be strictly collapsed dimensions
+        XCTAssertEqual(controller.panel.frame.height, controller.currentGeometry.collapsedHeight)
+        XCTAssertEqual(controller.panel.frame.width, controller.currentGeometry.collapsedWidth)
+
+        // Ensure toolbar proximity allows clicks through after re-enable
+        let toolbarPoint = NSPoint(x: 210, y: controller.panel.frame.height - 50)
+        XCTAssertNil(controller.panel.contentView?.hitTest(toolbarPoint))
+
+        // When expanded, panel frame should grow to expanded dimensions
+        controller.toggleExpansion()
+        XCTAssertTrue(controller.isExpanded)
+        XCTAssertEqual(controller.panel.frame.height, controller.currentGeometry.expandedHeight)
+        XCTAssertEqual(controller.panel.frame.width, controller.currentGeometry.expandedWidth)
     }
 
     @MainActor
@@ -696,13 +712,13 @@ final class CryptoModelTests: XCTestCase {
         XCTAssertFalse(host.activeShapeContains(belowExpanded))
         XCTAssertNil(host.hitTest(belowExpanded))
 
-        // 7. Mid-collapse state: Should retain expanded bounds temporarily during collapse animation
+        // 7. Mid-collapse state: Should retain expanded bounds temporarily for hover catch, but pass through clicks
         isExpanded = false
         isCollapsing = true
-        XCTAssertTrue(host.activeShapeContains(insideExpanded))
-        XCTAssertNotNil(host.hitTest(insideExpanded))
+        XCTAssertTrue(host.activeShapeContains(insideExpanded, forHitTest: false))
+        XCTAssertNil(host.hitTest(insideExpanded))
         isCollapsing = false
-        XCTAssertFalse(host.activeShapeContains(insideExpanded))
+        XCTAssertFalse(host.activeShapeContains(insideExpanded, forHitTest: false))
         XCTAssertNil(host.hitTest(insideExpanded))
     }
 }
