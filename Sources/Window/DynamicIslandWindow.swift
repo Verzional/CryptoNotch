@@ -95,7 +95,7 @@ public struct NotchGeometry: Equatable {
     }
 
     public var expandedWidth: CGFloat {
-        return max(collapsedWidth, 420)
+        return max(collapsedWidth + 80, 500)
     }
 
     public var expandedHeight: CGFloat {
