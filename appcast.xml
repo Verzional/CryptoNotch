@@ -7,6 +7,23 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         <description>Most recent updates to CryptoNotch</description>
         <language>en</language>
         <item>
+            <title>CryptoNotch 1.7.0</title>
+            <pubDate>Sat, 24 Oct 2026 21:03:28 +0700</pubDate>
+            <sparkle:version>19</sparkle:version>
+            <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<h2>CryptoNotch 1.7.0</h2>
+<ul>
+  <li>**Wider Island Presentation:** Expanded the Dynamic Island width to 500pt to give metrics and action tools visual breathing room.</li>
+  <li>**Search Dismissal Grace Period:** Switching coins via search now keeps the expanded island open for 3 seconds (or indefinitely if hovered) so you can view the new pair.</li>
+  <li>**Fluid & Seamless Transitions:** Eliminated lateral sliding and origin jumps by permanently anchoring window dimensions, plus an asymmetric fade-out.</li>
+  <li>**Instant Codesigning:** Streamlined build & packaging pipelines with Developer ID signing and zero network timeouts.</li>
+</ul>
+            ]]></description>
+            <enclosure url="https://github.com/Verzional/CryptoNotch/releases/download/v1.7.0/CryptoNotch.dmg" sparkle:edSignature="zOsbzKpxybVYLqW5cmvcHQ7tJArniQyf0EQzHhR4v4Ie2HK+ovuJ7xHgKWH+6EXaJFPUEcWhLYgHh1uGrEB4DQ==" length="3619585" type="application/octet-stream"></enclosure>
+        </item>
+        <item>
             <title>CryptoNotch 1.6.6</title>
             <pubDate>Thu, 22 Oct 2026 10:22:23 +0700</pubDate>
             <sparkle:version>18</sparkle:version>
@@ -288,6 +305,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: PwVzmhU5djYQZFAwdFyHqjiDZtxtlUGg85MHe+5lsJIcpIwWjCpMkqEmahf1Uo4Gf1IR7h3disec3xEQ+OsaDA==
-length: 20684
+edSignature: ogTOwLUBnZi8H0k+4kOyAjfLhlqGa9Ue4eThQ9Om8+K9wODL5t4GNc0D02TCmehGJWVpmmBBoIdHbRF7fImVAQ==
+length: 22026
 -->
