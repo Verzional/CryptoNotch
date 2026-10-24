@@ -374,8 +374,8 @@ public final class DynamicIslandController: NSObject, ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var collapseWorkItem: DispatchWorkItem?
 
-    public static let expandAnimation = Animation.spring(response: 0.30, dampingFraction: 0.72)
-    public static let collapseAnimation = Animation.spring(response: 0.20, dampingFraction: 0.88)
+    public static let expandAnimation = Animation.spring(response: 0.34, dampingFraction: 0.82)
+    public static let collapseAnimation = Animation.spring(response: 0.24, dampingFraction: 0.88)
 
     public init(binanceService: BinanceService, settings: SettingsModel) {
         self.binanceService = binanceService
@@ -704,7 +704,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
     }
 
     /// Positions the island window centered at the top edge of the screen, hugging the notch or floating on external displays.
-    /// Resizes the window dynamically between collapsed bounds (33pt) and expanded bounds (159pt).
+    /// Keeps window dimensions permanently anchored at expandedWidth x expandedHeight so AppKit never shifts or jumps backing stores during expand/collapse.
     public func updatePanelFrame(forceExpanded: Bool? = nil) {
         let screen = resolveTargetScreen()
         let geometry = NotchGeometry.current(for: screen)
@@ -712,16 +712,15 @@ public final class DynamicIslandController: NSObject, ObservableObject {
         self.currentGeometry = geometry
 
         let screenFrame = screen.frame
-        let shouldBeExpanded = forceExpanded ?? (isExpanded || isCollapsing)
-        let width = shouldBeExpanded ? geometry.expandedWidth : geometry.collapsedWidth
-        let height = shouldBeExpanded ? geometry.expandedHeight : geometry.collapsedHeight
+        let width = geometry.expandedWidth
+        let height = geometry.expandedHeight
 
         let x = geometry.notchCenter - (width / 2)
         let y = screenFrame.maxY - height
 
         let targetFrame = NSRect(x: x, y: y, width: width, height: height)
         if panel.frame != targetFrame {
-            panel.setFrame(targetFrame, display: true)
+            panel.setFrame(targetFrame, display: false)
         }
     }
 }

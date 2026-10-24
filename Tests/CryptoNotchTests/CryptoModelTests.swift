@@ -399,15 +399,15 @@ final class CryptoModelTests: XCTestCase {
         XCTAssertFalse(controller.isExpanded)
         XCTAssertFalse(controller.isCollapsing)
 
-        // Panel frame should be strictly collapsed dimensions
-        XCTAssertEqual(controller.panel.frame.height, controller.currentGeometry.collapsedHeight)
-        XCTAssertEqual(controller.panel.frame.width, controller.currentGeometry.collapsedWidth)
+        // Panel frame: fixed at expanded dimensions to prevent horizontal/vertical origin jumps
+        XCTAssertEqual(controller.panel.frame.height, controller.currentGeometry.expandedHeight)
+        XCTAssertEqual(controller.panel.frame.width, controller.currentGeometry.expandedWidth)
 
-        // Ensure toolbar proximity allows clicks through after re-enable
-        let toolbarPoint = NSPoint(x: 210, y: controller.panel.frame.height - 50)
+        // Ensure toolbar proximity allows clicks through after re-enable (collapsed hit-test area is 33pt tall)
+        let toolbarPoint = NSPoint(x: 210, y: 50)
         XCTAssertNil(controller.panel.contentView?.hitTest(toolbarPoint))
 
-        // When expanded, panel frame should grow to expanded dimensions
+        // When expanded, controller isExpanded becomes true, panel frame remains stable
         controller.toggleExpansion()
         XCTAssertTrue(controller.isExpanded)
         XCTAssertEqual(controller.panel.frame.height, controller.currentGeometry.expandedHeight)
