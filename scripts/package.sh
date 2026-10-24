@@ -13,17 +13,21 @@ SIGN_ID=$(security find-identity -p codesigning -v | grep "Developer ID Applicat
 
 if [ -n "$SIGN_ID" ]; then
     echo "🔏 Signing with Developer ID: $SIGN_ID"
+    TIMESTAMP_ARGS=("--timestamp=none")
+    if [ -n "$NOTARY_PROFILE" ] || [ "$1" = "--timestamp" ]; then
+        TIMESTAMP_ARGS=("--timestamp")
+    fi
     SPARKLE_DIR="CryptoNotch.app/Contents/Frameworks/Sparkle.framework/Versions/B"
     if [ -d "$SPARKLE_DIR" ]; then
         echo "   Signing Sparkle framework components..."
-        codesign -s "$SIGN_ID" --force --options runtime --timestamp "$SPARKLE_DIR/XPCServices/Downloader.xpc"
-        codesign -s "$SIGN_ID" --force --options runtime --timestamp "$SPARKLE_DIR/XPCServices/Installer.xpc"
-        codesign -s "$SIGN_ID" --force --options runtime --timestamp "$SPARKLE_DIR/Updater.app"
-        codesign -s "$SIGN_ID" --force --options runtime --timestamp "$SPARKLE_DIR/Autoupdate"
-        codesign -s "$SIGN_ID" --force --options runtime --timestamp "CryptoNotch.app/Contents/Frameworks/Sparkle.framework"
+        codesign -s "$SIGN_ID" --force --options runtime "${TIMESTAMP_ARGS[@]}" "$SPARKLE_DIR/XPCServices/Downloader.xpc"
+        codesign -s "$SIGN_ID" --force --options runtime "${TIMESTAMP_ARGS[@]}" "$SPARKLE_DIR/XPCServices/Installer.xpc"
+        codesign -s "$SIGN_ID" --force --options runtime "${TIMESTAMP_ARGS[@]}" "$SPARKLE_DIR/Updater.app"
+        codesign -s "$SIGN_ID" --force --options runtime "${TIMESTAMP_ARGS[@]}" "$SPARKLE_DIR/Autoupdate"
+        codesign -s "$SIGN_ID" --force --options runtime "${TIMESTAMP_ARGS[@]}" "CryptoNotch.app/Contents/Frameworks/Sparkle.framework"
     fi
     echo "   Signing CryptoNotch.app..."
-    codesign -s "$SIGN_ID" --force --options runtime --timestamp CryptoNotch.app
+    codesign -s "$SIGN_ID" --force --options runtime "${TIMESTAMP_ARGS[@]}" CryptoNotch.app
 else
     echo "⚠️  Developer ID not found. Signing ad-hoc..."
     codesign -s - --force --deep CryptoNotch.app
@@ -42,7 +46,7 @@ rm -rf "$DMG_ROOT"
 
 if [ -n "$SIGN_ID" ]; then
     echo "🔏 Signing CryptoNotch.dmg..."
-    codesign -s "$SIGN_ID" --force --timestamp CryptoNotch.dmg
+    codesign -s "$SIGN_ID" --force "${TIMESTAMP_ARGS[@]}" CryptoNotch.dmg
 fi
 
 # Optional Notarization step if NOTARY_PROFILE is configured
