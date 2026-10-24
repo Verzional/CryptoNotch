@@ -721,4 +721,35 @@ final class CryptoModelTests: XCTestCase {
         XCTAssertFalse(host.activeShapeContains(insideExpanded, forHitTest: false))
         XCTAssertNil(host.hitTest(insideExpanded))
     }
+
+    @MainActor
+    func testSearchDismissalGracePeriodBeforeCollapse() async throws {
+        let settings = SettingsModel()
+        let binanceService = BinanceService(initialSymbol: CryptoSymbol.presets[0])
+        let controller = DynamicIslandController(binanceService: binanceService, settings: settings)
+
+        // Expand island
+        controller.handleHover(true)
+        XCTAssertTrue(controller.isExpanded)
+
+        // Open search input popover
+        controller.isCustomInputShowing = true
+
+        // Move hover away while in search (popover is open)
+        controller.handleHover(false)
+        XCTAssertFalse(controller.isHovered)
+        XCTAssertTrue(controller.isExpanded)
+
+        // Dismiss search (user picked a coin)
+        controller.isCustomInputShowing = false
+
+        // Wait 0.25s - island should STILL be expanded due to the 3.0s grace period
+        try await Task.sleep(nanoseconds: 250_000_000)
+        XCTAssertTrue(controller.isExpanded)
+
+        // Hovering over the island cancels the collapse timer
+        controller.handleHover(true)
+        XCTAssertTrue(controller.isHovered)
+        XCTAssertTrue(controller.isExpanded)
+    }
 }

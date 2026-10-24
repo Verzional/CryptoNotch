@@ -478,7 +478,8 @@ public final class DynamicIslandController: NSObject, ObservableObject {
             .sink { [weak self] isCustomShowing, isCustomizing, isAlertShowing in
                 guard let self = self else { return }
                 if !isCustomShowing && !isCustomizing && !isAlertShowing && !self.isHovered && !self.settings.isPinned && self.isExpanded {
-                    self.handleHover(false)
+                    // Grace period when dismissing search / customize / alert so user can view the result
+                    self.handleHover(false, delay: 3.0)
                 }
             }
             .store(in: &cancellables)
@@ -596,7 +597,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
         }
     }
 
-    public func handleHover(_ hovering: Bool) {
+    public func handleHover(_ hovering: Bool, delay: TimeInterval = 0.10) {
         guard !settings.isNotchDisabled else { return }
         isHovered = hovering
         if hovering {
@@ -635,7 +636,7 @@ public final class DynamicIslandController: NSObject, ObservableObject {
                 }
             }
             collapseWorkItem = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.10, execute: work)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
         }
     }
 
