@@ -30,28 +30,20 @@ public struct DynamicIslandView: View {
                         binanceService: binanceService,
                         settings: settings
                     )
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity
-                                .combined(with: .scale(scale: 0.94, anchor: .top))
-                                .combined(with: .offset(y: -6)),
-                            removal: .opacity
-                                .combined(with: .scale(scale: 0.96, anchor: .top))
-                        )
-                    )
+                    .transition(.asymmetric(
+                        insertion: .opacity.animation(.easeInOut(duration: 0.18).delay(0.06)),
+                        removal: .opacity.animation(.easeOut(duration: 0.08))
+                    ))
                 } else {
                     CollapsedNotchView(
                         geometry: geometry,
                         binanceService: binanceService,
                         controller: controller
                     )
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity
-                                .combined(with: .scale(scale: 0.95, anchor: .center)),
-                            removal: .opacity
-                        )
-                    )
+                    .transition(.asymmetric(
+                        insertion: .opacity.animation(.easeInOut(duration: 0.14).delay(0.08)),
+                        removal: .opacity.animation(.easeOut(duration: 0.08))
+                    ))
                 }
             }
             .frame(
@@ -102,10 +94,10 @@ public struct DynamicIslandView: View {
                 ? 0.0
                 : ((settings.stealthMode && !controller.isExpanded && !controller.isHovered) ? 0.0 : 1.0)
         )
+        .animation(.easeInOut(duration: 0.25), value: settings.stealthMode ? controller.isHovered : false)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(.spring(response: 0.45, dampingFraction: 0.82), value: settings.isNotchDisabled)
         .animation(.easeInOut(duration: 0.2), value: binanceService.flashDirection)
         .animation(.easeInOut(duration: 0.25), value: settings.stealthMode)
-        .animation(.easeInOut(duration: 0.25), value: controller.isHovered)
     }
 }

@@ -178,7 +178,6 @@ public struct ExpandedNotchView: View {
                     }
                     .padding(.leading, 14)
                     .frame(width: (geometry.expandedWidth - geometry.notchWidth) / 2, height: 22, alignment: .leading)
-                    .offset(y: 2)
 
                     // Center: Gap matching physical camera notch
                     Color.clear
@@ -214,7 +213,6 @@ public struct ExpandedNotchView: View {
                         }
                     }
                     .padding(.leading, 14)
-                    .offset(y: 2)
 
                     Spacer()
 

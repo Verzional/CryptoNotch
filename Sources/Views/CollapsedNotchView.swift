@@ -62,7 +62,7 @@ public struct CollapsedNotchView: View {
             .transition(.opacity)
             .frame(width: geometry.earWidth, alignment: .center)
         }
-        .frame(height: geometry.collapsedHeight)
+        .frame(width: geometry.collapsedWidth, height: geometry.collapsedHeight)
         .contentShape(Rectangle())
         .onTapGesture {
             controller.toggleExpansion()
