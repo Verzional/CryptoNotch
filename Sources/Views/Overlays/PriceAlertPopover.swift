@@ -28,6 +28,17 @@ public struct PriceAlertPopover: View {
     }
 
     private var parsedEnteredPrice: Double? {
+        let trimmed = targetPriceText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasSuffix("%") || trimmed.hasPrefix("+") || (trimmed.hasPrefix("-") && Double(trimmed) != nil) {
+            let cleaned = trimmed
+                .replacingOccurrences(of: "%", with: "")
+                .replacingOccurrences(of: "+", with: "")
+                .trimmingCharacters(in: .whitespaces)
+            if let pctValue = Double(cleaned), currentPrice > 0 {
+                let pct = pctValue / 100.0
+                return roundedPrice(for: pct)
+            }
+        }
         let cleaned = targetPriceText.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespaces)
         return Double(cleaned)
     }
@@ -88,14 +99,22 @@ public struct PriceAlertPopover: View {
 
                     Spacer()
 
-                    Text("\(alerts.count)/3")
-                        .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
-                        .contentTransition(.identity)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.10))
-                        .foregroundColor(.white.opacity(0.75))
-                        .clipShape(Capsule())
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            alertManager.removeAllAlerts(for: symbol.symbol)
+                        }
+                    } label: {
+                        Text("Clear")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .contentTransition(.identity)
+                            .foregroundColor(alerts.isEmpty ? .white.opacity(0.35) : .white.opacity(0.7))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2.5)
+                            .background(Color.white.opacity(alerts.isEmpty ? 0.05 : 0.1))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(alerts.isEmpty)
                 }
 
                 // Input Bar (Exact 1:1 match to SearchPairPopover)
@@ -121,11 +140,10 @@ public struct PriceAlertPopover: View {
                         .stroke(isFieldFocused ? Color.white.opacity(0.3) : Color.white.opacity(0.12), lineWidth: 0.8)
                 )
 
-                // Quick Percentage Chips (1:1 replica of HUD change pill)
+                // Quick Percentage Chips (4 full-width segmented chips)
                 if currentPrice > 0 {
-                    HStack(spacing: 0) {
-                        let pcts = [-0.05, -0.02, 0.02, 0.05]
-                        ForEach(Array(pcts.enumerated()), id: \.element) { index, pct in
+                    HStack(spacing: 7) {
+                        ForEach([-0.05, -0.02, 0.02, 0.05], id: \.self) { pct in
                             QuickPercentagePill(
                                 pct: pct,
                                 isSelected: isPillSelected(pct)
@@ -133,18 +151,15 @@ public struct PriceAlertPopover: View {
                                 targetPriceText = formattedCalculatedPrice(for: pct)
                                 isFieldFocused = true
                             }
-                            if index < pcts.count - 1 {
-                                Spacer(minLength: 2)
-                            }
                         }
                     }
+                    .frame(maxWidth: .infinity)
                 }
 
                 if let err = inputError {
                     Text(err)
                         .font(.system(size: 8.5, weight: .medium, design: .rounded))
                         .foregroundColor(.red.opacity(0.9))
-                        .transition(.opacity)
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
@@ -152,10 +167,7 @@ public struct PriceAlertPopover: View {
 
             // Dynamic Alerts Section (Hugs content: 0 alerts = zero extra height)
             if !alerts.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Divider()
-                        .background(Color.white.opacity(0.10))
-
+                VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("ACTIVE ALERTS")
                             .font(.system(size: 8.5, weight: .bold, design: .rounded))
@@ -163,22 +175,35 @@ public struct PriceAlertPopover: View {
                             .tracking(0.5)
 
                         Spacer()
+
+                        Text("\(alerts.count)/5")
+                            .font(.system(size: 8.5, weight: .medium, design: .monospaced))
+                            .contentTransition(.identity)
+                            .foregroundColor(.gray.opacity(0.7))
                     }
 
                     VStack(spacing: 3) {
                         ForEach(alerts) { alert in
                             AlertRowView(alert: alert) {
-                                withAnimation(.spring(response: 0.22, dampingFraction: 0.8)) {
+                                withAnimation(.easeInOut(duration: 0.18)) {
                                     alertManager.removeAlert(id: alert.id)
                                 }
                             }
+                            .transition(.asymmetric(
+                                insertion: .identity,
+                                removal: .opacity.combined(with: .scale(scale: 0.95))
+                            ))
                         }
                     }
                 }
+                .transition(.asymmetric(
+                    insertion: .identity,
+                    removal: .opacity
+                ))
             }
         }
         .padding(12)
-        .frame(width: 244)
+        .frame(width: 285, alignment: .top)
         .preferredColorScheme(.dark)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
@@ -190,18 +215,13 @@ public struct PriceAlertPopover: View {
     private func createAlert() {
         let symbol = binanceService.currentSymbol
         let alerts = alertManager.allAlerts(for: symbol.symbol)
-        if alerts.count >= 3 {
-            withAnimation(.spring(response: 0.22, dampingFraction: 0.8)) {
-                inputError = "Maximum 3 alerts"
-            }
+        if alerts.count >= 5 {
+            inputError = "Maximum 5 alerts"
             return
         }
 
-        let cleaned = targetPriceText.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespaces)
-        guard let target = Double(cleaned), target > 0 else {
-            withAnimation(.spring(response: 0.22, dampingFraction: 0.8)) {
-                inputError = "Enter a valid price"
-            }
+        guard let target = parsedEnteredPrice, target > 0 else {
+            inputError = "Enter a valid price"
             return
         }
 
@@ -240,15 +260,13 @@ private struct QuickPercentagePill: View {
         Button(action: action) {
             HStack(spacing: 3) {
                 Image(systemName: pct >= 0 ? "arrow.up.right" : "arrow.down.right")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 8.5, weight: .bold))
                 Text(pct > 0 ? "+\(Int(pct * 100))%" : "\(Int(pct * 100))%")
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .font(.system(size: 9.5, weight: .semibold, design: .rounded))
                     .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
             }
-            .padding(.horizontal, 6)
-            .frame(height: 20)
-            .fixedSize(horizontal: true, vertical: false)
+            .frame(maxWidth: .infinity)
+            .frame(height: 22)
             .background(
                 ZStack {
                     Color.black.opacity(0.85)
@@ -267,9 +285,9 @@ private struct QuickPercentagePill: View {
                     )
             )
         }
+        .frame(maxWidth: .infinity)
         .buttonStyle(QuickPillButtonStyle())
         .focusable(false)
-        .layoutPriority(1)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.12)) {
                 isHovered = hovering
@@ -284,7 +302,6 @@ private struct AlertRowView: View {
     let onDelete: () -> Void
 
     @State private var isDeleteHovered: Bool = false
-    @State private var appeared: Bool = false
 
     var body: some View {
         HStack(spacing: 5) {
@@ -324,11 +341,5 @@ private struct AlertRowView: View {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
         )
-        .opacity(appeared ? 1.0 : 0.0)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.18)) {
-                appeared = true
-            }
-        }
     }
 }
