@@ -38,30 +38,36 @@ public struct CustomizationPopover: View {
             }
 
             // Interactive 6-slot preview layout
-            VStack(alignment: .leading, spacing: 4) {
-                Text("TAP A SLOT TO EDIT")
-                    .font(.system(size: 8.5, weight: .bold, design: .rounded))
-                    .foregroundColor(.gray)
-                    .tracking(0.5)
-
-                VStack(spacing: 4) {
-                    HStack(spacing: 4) {
-                        ForEach(0..<3, id: \.self) { idx in
-                            slotPreviewButton(index: idx, metric: slots[idx])
-                        }
+            VStack(spacing: 4) {
+                HStack(spacing: 4) {
+                    ForEach(0..<3, id: \.self) { idx in
+                        slotPreviewButton(index: idx, metric: slots[idx])
                     }
-                    HStack(spacing: 4) {
-                        ForEach(3..<6, id: \.self) { idx in
-                            slotPreviewButton(index: idx, metric: slots[idx])
-                        }
+                }
+                HStack(spacing: 4) {
+                    ForEach(3..<6, id: \.self) { idx in
+                        slotPreviewButton(index: idx, metric: slots[idx])
                     }
                 }
             }
 
-            Divider().background(Color.white.opacity(0.10))
-
             // Metrics picker list filtered to metrics supported on the current exchange
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
+                // Section Header
+                HStack {
+                    Text("AVAILABLE METRICS")
+                        .font(.system(size: 8.5, weight: .bold, design: .rounded))
+                        .foregroundColor(.gray)
+                        .tracking(0.5)
+
+                    Spacer()
+
+                    Text("SLOT \(selectedSlotToCustomize + 1)")
+                        .font(.system(size: 8.5, weight: .medium, design: .monospaced))
+                        .contentTransition(.identity)
+                        .foregroundColor(.gray.opacity(0.7))
+                }
+
                 let alreadySelected = Set(slots)
                 let availableMetrics = StatMetric.allCases.filter { metric in
                     metric.isAvailable(on: exchange) &&
@@ -121,8 +127,8 @@ public struct CustomizationPopover: View {
 
                                         Spacer()
 
-                                        Image(systemName: "plus.circle")
-                                            .font(.system(size: 11, weight: .medium))
+                                        Image(systemName: "arrow.left.arrow.right")
+                                            .font(.system(size: 10, weight: .semibold))
                                             .foregroundColor(.white.opacity(0.40))
                                     }
                                     .padding(.horizontal, 9)
@@ -145,7 +151,7 @@ public struct CustomizationPopover: View {
             }
         }
         .padding(12)
-        .frame(width: 268)
+        .frame(width: 285, alignment: .top)
         .preferredColorScheme(.dark)
         .onAppear {
             settings.adaptSlots(for: exchange)
