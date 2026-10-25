@@ -33,16 +33,47 @@ public struct SearchPairPopover: View {
 
                 Spacer()
 
-                Text("\(binanceService.currentSymbol.baseAsset)/\(binanceService.currentSymbol.effectiveQuote(for: binanceService.selectedExchange))")
-                    .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.white.opacity(0.1))
-                    .foregroundColor(.white.opacity(0.75))
-                    .clipShape(Capsule())
+                Button {
+                    withAnimation(.spring(response: 0.22, dampingFraction: 0.8)) {
+                        settings.clearFavorites()
+                    }
+                } label: {
+                    Text("Clear")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundColor(settings.favorites.isEmpty ? .white.opacity(0.35) : .white.opacity(0.7))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2.5)
+                        .background(Color.white.opacity(settings.favorites.isEmpty ? 0.05 : 0.1))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(settings.favorites.isEmpty)
             }
 
-            // Exchange Segmented Selector
+            // Sleek Search Input Bar (Primary Hero Input matching PriceAlertPopover)
+            HStack(spacing: 7) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.gray)
+
+                TextField("Symbol (e.g. SOL, SUI)", text: $customSymbolText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .focused($isSearchFocused)
+                    .onSubmit {
+                        commitCustomSymbol()
+                    }
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 6)
+            .background(Color.white.opacity(0.08))
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(isSearchFocused ? Color.white.opacity(0.3) : Color.white.opacity(0.12), lineWidth: 0.8)
+            )
+
+            // Exchange Segmented Selector (Scope Filter)
             HStack(spacing: 5) {
                 ForEach(CryptoExchange.allCases) { exchange in
                     let isSelected = binanceService.selectedExchange == exchange
@@ -76,29 +107,6 @@ public struct SearchPairPopover: View {
                     .buttonStyle(.plain)
                 }
             }
-
-            // Sleek Search Input Bar
-            HStack(spacing: 7) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.gray)
-
-                TextField("Symbol (e.g. SOL, SUI)", text: $customSymbolText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .focused($isSearchFocused)
-                    .onSubmit {
-                        commitCustomSymbol()
-                    }
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.08))
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(isSearchFocused ? Color.white.opacity(0.3) : Color.white.opacity(0.12), lineWidth: 0.8)
-            )
 
             if binanceService.isInvalidSymbol {
                 Text("Symbol not found on \(binanceService.selectedExchange.displayName)")
@@ -253,7 +261,7 @@ public struct SearchPairPopover: View {
             }
         }
         .padding(12)
-        .frame(width: 285)
+        .frame(width: 285, alignment: .top)
         .preferredColorScheme(.dark)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
