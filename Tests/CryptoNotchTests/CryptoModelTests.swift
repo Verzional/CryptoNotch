@@ -102,6 +102,11 @@ final class CryptoModelTests: XCTestCase {
         XCTAssertEqual(settings.favorites.count, 9)
         XCTAssertTrue(settings.isFavorite("COIN1USDT"))
         XCTAssertFalse(settings.isFavorite("COIN10USDT"))
+
+        // Test clearFavorites()
+        settings.clearFavorites()
+        XCTAssertEqual(settings.favorites.count, 0)
+        XCTAssertFalse(settings.isFavorite("COIN1USDT"))
     }
 
     @MainActor
@@ -570,6 +575,22 @@ final class CryptoModelTests: XCTestCase {
 
         // Clean up
         manager.removeAlert(id: alert2.id)
+        XCTAssertEqual(manager.alerts.count, 0)
+
+        // Test removeAllAlerts(for:)
+        _ = manager.addAlert(symbol: "BTC", exchange: .binance, targetPrice: 70000, direction: .above)
+        _ = manager.addAlert(symbol: "BTC", exchange: .binance, targetPrice: 65000, direction: .below)
+        _ = manager.addAlert(symbol: "ETH", exchange: .binance, targetPrice: 3000, direction: .above)
+        XCTAssertEqual(manager.alerts.count, 3)
+        XCTAssertEqual(manager.allAlerts(for: "BTC").count, 2)
+        XCTAssertEqual(manager.allAlerts(for: "ETH").count, 1)
+
+        manager.removeAllAlerts(for: "BTC")
+        XCTAssertEqual(manager.allAlerts(for: "BTC").count, 0)
+        XCTAssertEqual(manager.allAlerts(for: "ETH").count, 1)
+        XCTAssertEqual(manager.alerts.count, 1)
+
+        manager.removeAllAlerts(for: "ETH")
         XCTAssertEqual(manager.alerts.count, 0)
     }
 

@@ -191,4 +191,8 @@ public final class SettingsModel: ObservableObject {
         let item = favorites.remove(at: sourceIndex)
         favorites.insert(item, at: destinationIndex)
     }
+
+    public func clearFavorites() {
+        favorites = []
+    }
 }

@@ -94,6 +94,12 @@ public final class AlertManager: NSObject, ObservableObject {
         saveAlerts()
     }
 
+    public func removeAllAlerts(for symbol: String) {
+        let cleanSymbol = CryptoSymbol.from(rawInput: symbol).symbol
+        alerts.removeAll { $0.symbol == cleanSymbol }
+        saveAlerts()
+    }
+
     public func clearTriggeredAlerts() {
         alerts.removeAll { $0.isTriggered }
         saveAlerts()
